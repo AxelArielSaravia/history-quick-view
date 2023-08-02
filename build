@@ -1,0 +1,20 @@
+#! /bin/bash
+
+#This Build use:
+# Bun.js to bundle and minify javascript (https://bun.sh/)
+# tdewolff/minify to minify html, css and json (https://github.com/tdewolff/minify)
+
+bun build ./src/main.js --outdir ./extension --minify
+echo JS build and minified successfully
+
+minify -o ./extension/popup.html ./src/popup.html
+echo HTML minified successfully
+
+minify -o ./extension/style.css ./src/style.css
+echo CSS minified successfully
+
+minify -o ./extension/manifest.json ./src/manifest.json
+echo json minified successfully
+
+#cp -dr ./src/images ./extension/images
+#echo Images copyed successfully
