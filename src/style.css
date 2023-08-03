@@ -1,7 +1,4 @@
 :root {
-    accent-color: #3d3d3d;
-    color-scheme: dark;
-
     --h-font: verdada,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
     --h-color: #efe8e8;
     --h-color-bg: #3d3d3d;
@@ -15,11 +12,12 @@
 
     --h-item-height: 35px;
     --h-item-padding: 0 8px;
-}
 
-html {
+    accent-color: #3d3d3d;
+    color-scheme: dark;
     font-size: 10px;
 }
+
 
 body {
     width: 380px;
