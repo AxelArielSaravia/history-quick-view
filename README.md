@@ -18,7 +18,7 @@ This extension is created for my own necessities. If you have some bugs or you n
 
 ### Some user configurations:
 - You can set if the url opens in the current tab or in a new tab.
-- You can specify if a new tab is opens, go to that new tab (focus it) or stay in your current tab.
+- You can specify when a new tab is opens, go to it (focus it) or stay in your current tab.
 
 ### Some keyboard shortcuts:
 

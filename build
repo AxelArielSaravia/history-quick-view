@@ -16,5 +16,5 @@ echo CSS minified successfully
 minify -o ./extension/manifest.json ./src/manifest.json
 echo json minified successfully
 
-#cp -dr ./src/images ./extension/images
-#echo Images copyed successfully
+cp -dr ./src/images ./extension
+echo Images copyed successfully

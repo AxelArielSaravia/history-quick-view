@@ -2,13 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History</title>
     <script src="/main.js" type="module"></script>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="h-header">
+    <header class="h-header">
         <div class="h-left">
             <h1 class="h-title bold">History Quick View</h1>
             <div id="h-loading" class="h-loading">
@@ -95,18 +94,26 @@
                 </svg>
             </button>
         </div>
-    </div>
-    <div id="h-modal" class="h-modal" data-display="0">
+    </header>
+    <section id="h-modal" class="h-modal" data-display="0">
         <h2>Configuration</h2>
         <div class="h-config">
-            <p>The links will open at:</p>
+            <p
+                title="Set if the url opens in the current tab or in a new tab"
+            >
+                The links will open at:
+            </p>
             <select id="h-config-open" name="openLinks">
                 <option value="0">Current Tab</option>
                 <option value="1">New Tab</option>
             </select>
         </div>
         <div class="h-config">
-            <p>Focus opened tabs:</p>
+            <p
+                title="When a new tab is opens, go to it (focus it) or stay in your current tab"
+            >
+                Focus opened tabs:
+            </p>
             <select id="h-config-focus" name="focusTabs">
                 <option value="0">No</option>
                 <option value="1">Yes</option>
@@ -136,7 +143,7 @@
                 </a>
             </p>
         </div>
-    </div>
+    </section>
     <div class="h-search">
         <svg
             class="icon icon-search"
@@ -178,12 +185,12 @@
             </svg>
         </button>
     </div>
-    <div class="h-content">
+    <main class="h-content">
         <p id="h-no-history" class="h-no-history" data-display="0">
             No History
         </p>
         <div id="h-container" class="h-container"></div>
-    </div>
+    </main>
     <template id="template_h-range">
         <div class="h-range">
             <div class="h-date" data-class="h-date">
