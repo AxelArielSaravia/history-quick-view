@@ -1,71 +1,82 @@
 // Axel Ariel Saravia
 // 02-08-2023 (Latam format)
 
-const H_DISPLAY_ATTR = "data-display";
-const H_URL_ATTR = "data-url";
-const H_RANGE_ATTR = "data-range";
-const H_CLASS_ATTR = "data-class";
-const H_TYPE_ATTR = "data-type";
-const H_ITEM_CLASS = "h-item";
-const H_ITEM_SELECTOR = "[data-class=h-item]";
-const H_ITEM_MATCHES = "[data-class=h-item] *";
-const H_DATE_CLASS = "h-date";
-const H_BREMOVE_CLASS = "h-remove";
-const H_BREMOVE_SELECTOR = "[data-class=h-remove]";
-const H_BREMOVE_MATCHES = "[data-class=h-remove] *";
+//@ts-check
+
+const DOM_DISPLAY_ATTR = "data-display";
+const DOM_URL_ATTR = "data-url";
+const DOM_RANGE_ATTR = "data-range";
+
+const DOM_TYPE_ATTR = "data-type";
+const DOM_PARENT_ATTR = "data-parent";
+
+const DOM_ITEM_V = "0";
+const DOM_ITEM_ATTR = `[${DOM_TYPE_ATTR}="${DOM_ITEM_V}"]`;
+const DOM_ITEM_CH = `[${DOM_TYPE_ATTR}="${DOM_ITEM_V}"] *`;
+
+const DOM_DATE_V = "1";
+
+const DOM_BREMOVE_V = "2";
+const DOM_BREMOVE_ATTR = `[${DOM_TYPE_ATTR}="${DOM_BREMOVE_V}"]`;
+const DOM_BREMOVE_CH = `[${DOM_TYPE_ATTR}="${DOM_BREMOVE_V}"] *`;
+
+const DOM_MODAL_V = "3";
 
 //Date TimeState Formatters
 const TimeStateFormatter = Intl.DateTimeFormat(undefined, {timeStyle: "short"});
 const DateFormatter = Intl.DateTimeFormat(undefined, {dateStyle: "full"});
 
 //DOM
-const DOMHContainer = document.getElementById("h-container");
-const DOMHInputSearch = document.getElementById("h-input-search");
-const DOMHButtonSearch = document.getElementById("h-button-search");
-const DOMHButtonHistory = document.getElementById("h-button-history");
-const DOMHButtonClean = document.getElementById("h-button-clean");
-const DOMHButtonMore = document.getElementById("h-button-more");
-const DOMHNoHistory = document.getElementById("h-no-history");
-const DOMHLoading = document.getElementById("h-loading");
-const DOMHModal = document.getElementById("h-modal");
-const DOMHConfigOpen = document.getElementById("h-config-open");
-const DOMHConfigFocus = document.getElementById("h-config-focus");
-const DOMTemplateHItem = document.getElementById("template_h-item");
-const DOMTemplateHRange = document.getElementById("template_h-range");
-const DOMTemplateHDeleteIcon = document.getElementById("template_h-delete-icon");
-const DOMFragment = document.createDocumentFragment();
-
-//utils
-
-const BinarySearch = {
-    //The arr have a descending order
+const DOM = {
     /**
-    @type {(startTime: number) => number}*/
-    indexOf(arr, target) {
-        var end = arr.length;
-        if (end < 5) {
-            return arr.indexOf(target);
-        }
-        var str = 0;
-        var mid = 0 ;
-        var el = 0;
-        while (str < end) {
-            mid = str + Math.floor((end - str) / 2);
-            el = arr[mid];
-            if (target === el) {
-                return mid;
-            } else if (el < target) {
-                end = mid;
-            } else {
-                str = mid + 1;
-            }
-        }
-        return -1;
-    }
+    @type {maybe<HTMLDivElement>}*/
+    container: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    inputSearch: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    buttonClear: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    buttonHistory: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    buttonMore: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    buttonSearch: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    noHistory: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    loading: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    modalConfig: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    selectOpen: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    selectFocus: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    templateItem: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    templateRange: undefined,
+    /**
+    @type {maybe<HTMLDivElement>}*/
+    templateIconDelete: undefined,
+    /**
+    @type {DocumentFragment}*/
+    fragment: document.createDocumentFragment(),
 };
 
-//state
 
+//state
 const StorageState = {
     //focusTabs can be: "0" (no) | "1" (yes)
     focusTabs: "0",
@@ -74,7 +85,7 @@ const StorageState = {
 };
 
 const ExtensionState = {
-    MIN_SEARCH_RESULTS: 30,
+    MIN_SEARCDOM_RESULTS: 30,
     lastItemId: "",
     totalItems: 0,
     historyFinished: false,
@@ -94,7 +105,7 @@ let CurrentTab = undefined;
 
 const SearchOptions = {
     text: "",
-    maxResults: ExtensionState.MIN_SEARCH_RESULTS,
+    maxResults: ExtensionState.MIN_SEARCDOM_RESULTS,
     startTime: 0,       //ms
     endTime: Date.now() //ms
 };
@@ -125,9 +136,17 @@ const TimeState = {
 };
 
 const RangeState = {
+    /**
+    @type {Array<number>} */
     end: [],
+    /**
+    @type {Array<number>} */
     start: [],
+    /**
+    @type {Array<number>} */
     count: [],
+    /**
+    @type {number} */
     length: 0,
 
     //Methods
@@ -141,11 +160,31 @@ const RangeState = {
         countArr[i] += 1;
         return true;
     },
+    // target is start element
     /**
-    @type {(start: number) => number}*/
-    getIndex(start) {
-        //return -1 if element do not exist
-        return BinarySearch.indexOf(RangeState.start, start);
+    @type {(target: number) => number}*/
+    getIndex(target) {
+        var arr = RangeState.start;
+        var end = arr.length;
+        if (end < 5) {
+            return arr.indexOf(target);
+        }
+        //binary search
+        var str = 0;
+        var mid = 0 ;
+        var el = 0;
+        while (str < end) {
+            mid = str + Math.floor((end - str) / 2);
+            el = arr[mid];
+            if (target === el) {
+                return mid;
+            } else if (el < target) {
+                end = mid;
+            } else {
+                str = mid + 1;
+            }
+        }
+        return -1;
     },
     /**
     @type {(i: number) => boolean}*/
@@ -205,80 +244,97 @@ function getFavicon(src) {
     return url.toString();
 }
 
+const TabOptions = {
+    active: false,
+    url: ""
+};
+
 /**
-@type {(startTime: number) => DOMHRange} */
-function createDOMHRange(startTime) {
-    const FragmentHRange = DOMTemplateHRange.content.cloneNode(true);
-    const DOMHRange = FragmentHRange.firstElementChild;
-
-    //Range header
-    const DOMHDate = DOMHRange.firstElementChild;
-    const DOMHDTitle = DOMHDate.firstElementChild;
-    const dateFormat = DateFormatter.format(startTime);
-    DOMHDTitle.textContent = dateFormat;
-
-    const DOMHDDelete = DOMHDate.lastElementChild;
-    if (ExtensionState.mode === "d") {
-        DOMHDDelete.title = `Remove all browsing history form ${dateFormat}`;
-        DOMHDDelete.setAttribute(H_RANGE_ATTR, String(startTime));
-        DOMHDDelete.appendChild(DOMTemplateHDeleteIcon.content.cloneNode(true));
+@type {(url: string, ctrl: boolean) => undefined}*/
+function openLink(url, ctrl) {
+    TabOptions.url = url;
+    TabOptions.active = (StorageState.focusTabs !== "0");
+    if ((StorageState.open === "0") === !ctrl) {
+        chrome.tabs.update(CurrentTab.id, TabOptions);
     } else {
-        DOMHDDelete.setAttribute(H_DISPLAY_ATTR, "0");
+        chrome.tabs.create(TabOptions);
     }
-
-    return DOMHRange;
 }
 
 /**
-@type {(hItem: HistoryItem, startTime: number) => DOMHItem} */
-function createDOMHItem(hItem, startTime) {
-    var FragmentHItem = DOMTemplateHItem.content.cloneNode(true);
-    var DOMHItem = FragmentHItem.firstElementChild;
-    DOMHItem.href = hItem.url;
-    DOMHItem.title = hItem.title + "\n" + hItem.url;
+@type {(startTime: number) => DOMHRange} */
+function createDOMRange(startTime) {
+    const FragmentRange = DOM.templateRange.content.cloneNode(true);
+    const DOMRange = FragmentRange.firstElementChild;
 
-    var DOMHItemChildren = DOMHItem.children;
-    var DOMImg = DOMHItemChildren[0];
-    DOMImg.src = getFavicon(hItem.url);
+    //Range header
+    const DOMDate = DOMRange.firstElementChild;
+    const DOMDTitle = DOMDate.firstElementChild;
+    const dateFormat = DateFormatter.format(startTime);
+    DOMDTitle.textContent = dateFormat;
 
-    var DOMTitle = DOMHItemChildren[1];
-    if (hItem.title === "") {
-        DOMTitle.textContent = hItem.url;
+    const DOMDDelete = DOMDate.lastElementChild;
+    if (ExtensionState.mode === "d") {
+        DOMDDelete.title = `Remove all browsing history form ${dateFormat}`;
+        DOMDDelete.setAttribute(DOM_RANGE_ATTR, String(startTime));
+        DOMDDelete.appendChild(DOM.templateIconDelete.content.cloneNode(true));
     } else {
-        DOMTitle.textContent = hItem.title;
+        DOMDDelete.setAttribute(DOM_DISPLAY_ATTR, "0");
     }
 
-    var DOMRight = DOMHItemChildren[2];
+    return DOMRange;
+}
+
+/**
+@type {(hitem: HistoryItem, startTime: number) => DOMHItem} */
+function createDOMItem(hitem, startTime) {
+    var FragmentItem = DOM.templateItem.content.cloneNode(true);
+    var DOMItem = FragmentItem.firstElementChild;
+    DOMItem.href = hitem.url;
+    DOMItem.title = hitem.title + "\n" + hitem.url;
+
+    var DOMItemChildren = DOMItem.children;
+    var DOMImg = DOMItemChildren[0];
+    DOMImg.src = getFavicon(hitem.url);
+
+    var DOMTitle = DOMItemChildren[1];
+    if (hitem.title === "") {
+        DOMTitle.textContent = hitem.url;
+    } else {
+        DOMTitle.textContent = hitem.title;
+    }
+
+    var DOMRight = DOMItemChildren[2];
 
 
     var DOMRDelete = DOMRight.firstElementChild;
-    DOMRDelete.setAttribute(H_URL_ATTR, hItem.url);
-    DOMRDelete.setAttribute(H_RANGE_ATTR, String(startTime));
-    DOMRDelete.appendChild(DOMTemplateHDeleteIcon.content.cloneNode(true));
+    DOMRDelete.setAttribute(DOM_URL_ATTR, hitem.url);
+    DOMRDelete.setAttribute(DOM_RANGE_ATTR, String(startTime));
+    DOMRDelete.appendChild(DOM.templateIconDelete.content.cloneNode(true));
 
     var DOMRTime = DOMRight.lastElementChild;
-    DOMRTime.textContent = TimeStateFormatter.format(hItem.lastVisitTime);
+    DOMRTime.textContent = TimeStateFormatter.format(hitem.lastVisitTime);
 
-    return DOMHItem;
+    return DOMItem;
 }
 
 /**
-@type {(hItems: Array<HistoryItem>) => undefined}*/
-function searchToDOM(hItems) {
-    if (hItems.length < 1
+@type {(hitems: Array<HistoryItem>) => undefined}*/
+function searchToDOM(hitems) {
+    if (hitems.length < 1
         // see the error below
-        || (hItems.length === 1 && hItems[0].id === ExtensionState.lastItemId)
+        || (hitems.length === 1 && hitems[0].id === ExtensionState.lastItemId)
     ) {
         console.info("No more History");
         ExtensionState.historyFinished = true;
-        DOMHLoading.setAttribute(H_DISPLAY_ATTR, "0");
+        DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "0");
         return;
     }
-    var DOMHRange;
+    var DOMRange;
     var rangeIndex;
     if (RangeState.length > 0) {
-        DOMHRange = DOMHContainer.lastElementChild;
-        DOMFragment.appendChild(DOMHRange);
+        DOMRange = DOM.container.lastElementChild;
+        DOM.fragment.appendChild(DOMRange);
 
         rangeIndex = RangeState.getIndex(TimeState.start);
     }
@@ -290,21 +346,21 @@ function searchToDOM(hItems) {
     // and the lastVisitTime of a HistoryItem is less than 470ms,
     // that HistoryItem is the first element of the new array
     //We need to check if this error continue happens
-    if (hItems[0].id === ExtensionState.lastItemId) {
+    if (hitems[0].id === ExtensionState.lastItemId) {
         i = 1;
     }
 
-    while (i < hItems.length) {
-        var hItem = hItems[i];
-        lastVisitTime = hItem.lastVisitTime;
+    while (i < hitems.length) {
+        var hitem = hitems[i];
+        lastVisitTime = hitem.lastVisitTime;
 
         //update range section
         if (TimeState.start > lastVisitTime) {
             TimeState.update(lastVisitTime);
 
             rangeIndex = RangeState.set(TimeState.end, TimeState.start);
-            DOMHRange = createDOMHRange(TimeState.start);
-            DOMFragment.appendChild(DOMHRange);
+            DOMRange = createDOMRange(TimeState.start);
+            DOM.fragment.appendChild(DOMRange);
         }
         //bad call, this is associate with the upper Error
         //else if (RangeState.length === 0) {
@@ -313,13 +369,13 @@ function searchToDOM(hItems) {
         //    return;
         //}
 
-        ExtensionState.lastItemId = hItem.id;
+        ExtensionState.lastItemId = hitem.id;
         ExtensionState.totalItems += 1;
         RangeState.addCount(rangeIndex);
 
-        const DOMHItem = createDOMHItem(hItem, TimeState.start);
+        const DOMItem = createDOMItem(hitem, TimeState.start);
 
-        DOMHRange.appendChild(DOMHItem);
+        DOMRange.appendChild(DOMItem);
 
         i += 1;
     }
@@ -328,9 +384,9 @@ function searchToDOM(hItems) {
         //The next search must have a diference of 500ms with the
         //last history item lastVisitTime. But sometimes breaks
         SearchOptions.endTime = lastVisitTime;
-        DOMHContainer.appendChild(DOMFragment);
+        DOM.container.appendChild(DOM.fragment);
     }
-    DOMHLoading.setAttribute(H_DISPLAY_ATTR, "0");
+    DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "0");
 
 }
 
@@ -339,39 +395,62 @@ function searchToDOM(hItems) {
 function handleSearch(HItems) {
     searchToDOM(HItems);
     if (ExtensionState.totalItems < 1) {
-        DOMHNoHistory.setAttribute(H_DISPLAY_ATTR, "1");
+        DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "1");
         return;
     }
-    DOMHNoHistory.setAttribute(H_DISPLAY_ATTR, "0");
+    DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "0");
 }
 
 /**
 @type {() => undefined}*/
-function searchAffterDelete() {
+function searchAfterDelete() {
     if (ExtensionState.totalItems < 1) {
-        DOMHNoHistory.setAttribute(H_DISPLAY_ATTR, "1");
+        DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "1");
         return;
     }
     if (!ExtensionState.historyFinished
-        && DOMHContainer.clientHeight === DOMHContainer.scrollHeight
+        && DOM.container.clientHeight === DOM.container.scrollHeight
     ) {
         chrome.history.search(SearchOptions, handleSearch);
+    }
+}
+
+function getStorage(data) {
+    var open = data.open;
+    var focusTabs = data.focusTabs;
+    var set = false;
+    if (open === undefined || (open !== "0" && open !== "1")) {
+        set = true;
+    } else {
+        StorageState.open = open;
+        DOM.selectOpen.value = open;
+    }
+    if (focusTabs === null || (focusTabs !== "0" && focusTabs !== "1")) {
+        set = true;
+    } else {
+        StorageState.focusTabs = focusTabs;
+        DOM.selectFocus.value = focusTabs;
+    }
+    if (set) {
+        chrome.storage.local.set(StorageState);
     }
 }
 
 const DeleteURLOptions = {
     url: ""
 };
+
 const DeleteRangeOptions = {
     endTime:0,
     startTime: 0
 };
+
 /**
 @type {(type: string, DOMDelete: HTMLButtonElement) => undefined}*/
-function DOMHDeleteClickHandler(type, DOMDelete) {
-    if (type === H_ITEM_CLASS) {
-        const url = DOMDelete.getAttribute(H_URL_ATTR);
-        const rangeKey = DOMDelete.getAttribute(H_RANGE_ATTR);
+function DOMDeleteOnclick(type, DOMDelete) {
+    if (type === DOM_ITEM_V) {
+        const url = DOMDelete.getAttribute(DOM_URL_ATTR);
+        const rangeKey = DOMDelete.getAttribute(DOM_RANGE_ATTR);
         if (url === null || rangeKey === null) {
             return;
         }
@@ -395,10 +474,10 @@ function DOMHDeleteClickHandler(type, DOMDelete) {
 
         ExtensionState.totalItems -= 1;
 
-        searchAffterDelete();
+        searchAfterDelete();
 
-    } else if (type === H_DATE_CLASS) {
-        const rangeKey = DOMDelete.getAttribute(H_RANGE_ATTR);
+    } else if (type === DOM_DATE_V) {
+        const rangeKey = DOMDelete.getAttribute(DOM_RANGE_ATTR);
         if (rangeKey === null) {
             return;
         }
@@ -422,11 +501,11 @@ function DOMHDeleteClickHandler(type, DOMDelete) {
 
         RangeState.remove(rangeIndex);
 
-        searchAffterDelete();
+        searchAfterDelete();
     }
 }
 
-function DOMHContainerScrollHandler(e) {
+function DOMContainerOnscroll(e) {
     if (ExtensionState.historyFinished) {
         return;
     }
@@ -434,118 +513,94 @@ function DOMHContainerScrollHandler(e) {
 
     //end of the current scroll
     if (target.scrollTop === target.scrollHeight - target.clientHeight) {
-        DOMHLoading.setAttribute(H_DISPLAY_ATTR, "1");
+        DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
         chrome.history.search(SearchOptions, searchToDOM);
     }
 };
 
-function DOMHInputSearchTimeout(DOMInput) {
+/**
+@type {(DOMInput: HTMLDivElement) => undefined} */
+function DOMInputSearchTimeout(DOMInput) {
     SearchOptions.text = DOMInput.value;
     SearchOptions.endTime = Date.now();
 
-    DOMHLoading.setAttribute(H_DISPLAY_ATTR, "1");
+    DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
 
     ExtensionState.reset();
     RangeState.reset();
     TimeState.reset();
-    DOMHContainer.replaceChildren();
+    DOM.container.replaceChildren();
 
     chrome.history.search(SearchOptions, handleSearch);
     timeout = undefined;
 };
 
 let timeout = undefined;
-function DOMHInputSearchInputHandler() {
-    if (DOMHInputSearch.value.length === 0) {
-        DOMHButtonSearch.setAttribute(H_DISPLAY_ATTR, "0");
+
+/**
+@type {() => undefined} */
+function DOMInputSearchOninput() {
+    if (DOM.inputSearch.value.length === 0) {
+        DOM.buttonSearch.setAttribute(DOM_DISPLAY_ATTR, "0");
         ExtensionState.mode = "d";
     } else {
-        DOMHButtonSearch.setAttribute(H_DISPLAY_ATTR, "1");
+        DOM.buttonSearch.setAttribute(DOM_DISPLAY_ATTR, "1");
         ExtensionState.mode = "s";
     }
     if (timeout !== undefined) {
         clearTimeout(timeout);
     }
-    timeout = setTimeout(DOMHInputSearchTimeout, 500, DOMHInputSearch);
-    DOMHLoading.setAttribute(H_DISPLAY_ATTR, "1");
+    timeout = setTimeout(DOMInputSearchTimeout, 500, DOM.inputSearch);
+    DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
 };
 
-const TabOptions = {
-    active: false,
-    url: ""
-};
 
 
 /**
-@type {(url: string, ctrl: boolean) => undefined}*/
-function openLink(url, ctrl) {
-    TabOptions.url = url;
-    TabOptions.active = (StorageState.focusTabs !== "0");
-    if ((StorageState.open === "0") === !ctrl) {
-        chrome.tabs.update(CurrentTab.id, TabOptions);
-    } else {
-        chrome.tabs.create(TabOptions);
-    }
+@type {() => undefined}*/
+function DOMButtonHistoryOnclick() {
+    openLink("chrome://history", false);
 }
 
-
-//Events
-DOMHInputSearch.oninput = DOMHInputSearchInputHandler;
-DOMHButtonSearch.onclick = function () {
-    DOMHInputSearch.value = "";
-    DOMHInputSearchInputHandler();
-}
-
-let open = false;
-DOMHButtonMore.onclick = function () {
-    if (open) {
-        DOMHModal.setAttribute(H_DISPLAY_ATTR, "0");
-    } else {
-        DOMHModal.setAttribute(H_DISPLAY_ATTR, "1");
-    }
-    open = !open;
-}
-
-DOMHConfigOpen.onchange = function (e) {
-    var target = e.currentTarget;
-    StorageState.open = target.value;
-    chrome.storage.local.set(StorageState);
-}
-DOMHConfigFocus.onchange = function (e) {
-    var target = e.currentTarget;
-    StorageState.focusTabs = target.value;
-    chrome.storage.local.set(StorageState);
-}
-
-DOMHContainer.onscroll = DOMHContainerScrollHandler;
-
-DOMHButtonClean.onclick = function () {
+/**
+@type {() => undefined}*/
+function DOMButtonClearOnclick() {
     TabOptions.url = "chrome://settings/clearBrowserData";
     TabOptions.active = true;
     chrome.tabs.create(TabOptions);
 }
 
-DOMHButtonHistory.onclick = function () {
-    openLink("chrome://history", false);
+/**
+@type {() => undefined}*/
+function DOMButtonMoreOnclick() {
+    DOM.modalConfig?.setAttribute(DOM_DISPLAY_ATTR, "1");
 }
 
-DOMHContainer.onclick = function (e) {
+/**
+@type {() => undefined}*/
+function DOMButtonSearchOnclick() {
+    DOM.inputSearch.value = "";
+    DOMInputSearchOninput();
+}
+
+
+function DOMCointainerOnclick(e) {
     var target = e.target;
-    var classAttr = target.getAttribute(H_CLASS_ATTR);
-    if (classAttr === H_BREMOVE_CLASS
-        || target.matches(H_BREMOVE_MATCHES)
+    var classAttr = target.getAttribute(DOM_TYPE_ATTR);
+    if (classAttr === DOM_BREMOVE_V
+        || target.matches(DOM_BREMOVE_CH)
     ) {
-        const DOMDelete = target.closest(H_BREMOVE_SELECTOR);
-        const type = DOMDelete.getAttribute(H_TYPE_ATTR);
-        DOMHDeleteClickHandler(type, DOMDelete);
+        const DOMDelete = target.closest(DOM_BREMOVE_ATTR);
+        const type = DOMDelete.getAttribute(DOM_PARENT_ATTR);
+        DOMDeleteOnclick(type, DOMDelete);
         e.preventDefault();
         return;
     }
-    if (classAttr === H_ITEM_CLASS
-        || target.matches(H_ITEM_MATCHES)
+    if (classAttr === DOM_ITEM_V
+        || target.matches(DOM_ITEM_CH)
     ) {
         if (!e.shiftKey) {
-            const HItem = target.closest(H_ITEM_SELECTOR);
+            const HItem = target.closest(DOM_ITEM_ATTR);
             const url = HItem.href;
             openLink(url, e.ctrlKey);
             e.preventDefault();
@@ -553,33 +608,108 @@ DOMHContainer.onclick = function (e) {
     }
 };
 
-//Main
-chrome.storage.local.get(undefined, function (data) {
-    var open = data.open;
-    var focusTabs = data.focusTabs;
-    var set = false;
-    if (open === undefined || (open !== "0" && open !== "1")) {
-        set = true;
-    } else {
-        StorageState.open = open;
-        DOMHConfigOpen.value = open;
+function DOMModalConfigOnclick(e) {
+    var target = e.target;
+    var domType = target.getAttribute(DOM_TYPE_ATTR);
+    if (domType == DOM_MODAL_V
+        || domType === DOM_BREMOVE_V
+        || target.matches(DOM_BREMOVE_CH)
+    ) {
+        DOM.modalConfig?.setAttribute("data-display", "0");
     }
-    if (focusTabs === null || (focusTabs !== "0" && focusTabs !== "1")) {
-        set = true;
-    } else {
-        StorageState.focusTabs = focusTabs;
-        DOMHConfigFocus.value = focusTabs;
-    }
-    if (set) {
-        chrome.storage.local.set(StorageState);
-    }
-});
+}
 
-chrome.tabs.query(
-    {active: true, currentWindow: true},
-    function (tabs) {
-        CurrentTab = tabs[0];
-    }
-);
+function DOMSelectOpenOnchange(e) {
+    var target = e.currentTarget;
+    StorageState.open = target.value;
+    chrome.storage.local.set(StorageState);
+}
 
-chrome.history.search(SearchOptions, handleSearch);
+function DOMSelectFocusOnchange(e) {
+    var target = e.currentTarget;
+    StorageState.focusTabs = target.value;
+    chrome.storage.local.set(StorageState);
+}
+
+/**
+@type {() => Promise<undefined>}*/
+async function main() {
+    DOM.loading ??= document.getElementById("loading");
+    if (DOM.loading === undefined) {
+        throw Error("DOM.loading is undefined");
+    }
+    DOM.buttonHistory ??= document.getElementById("button_history");
+    if (DOM.buttonHistory === undefined) {
+        throw Error("DOM.buttonHistory is undefined");
+    }
+    DOM.buttonClear ??= document.getElementById("button_clear");
+    if (DOM.buttonClear === undefined) {
+        throw Error("DOM.buttonClear is undefined");
+    }
+    DOM.buttonMore ??= document.getElementById("button_more");
+    if (DOM.buttonMore === undefined) {
+        throw Error("DOM.buttonMore is undefined");
+    }
+    DOM.inputSearch ??= document.getElementById("input_search");
+    if (DOM.inputSearch === undefined) {
+        throw Error("DOM.inputSearch is undefined");
+    }
+    DOM.buttonSearch ??= document.getElementById("button_search");
+    if (DOM.buttonSearch === undefined) {
+        throw Error("DOM.buttonSearch is undefined");
+    }
+    DOM.noHistory ??= document.getElementById("no-history");
+    if (DOM.noHistory === undefined) {
+        throw Error("DOM.noHistory is undefined");
+    }
+    DOM.container ??= document.getElementById("container");
+    if (DOM.container === undefined) {
+        throw Error("DOM.container is undefined");
+    }
+    DOM.modalConfig ??= document.getElementById("modal_config");
+    if (DOM.modalConfig === undefined) {
+        throw Error("DOM.modalConfig is undefined");
+    }
+    DOM.selectOpen ??= document.getElementById("select_open");
+    if (DOM.selectOpen === undefined) {
+        throw Error("DOM.selectOpen is undefined");
+    }
+    DOM.selectFocus ??= document.getElementById("select_focus");
+    if (DOM.selectFocus === undefined) {
+        throw Error("DOM.selectFocus is undefined");
+    }
+    DOM.templateRange ??= document.getElementById("template_range");
+    if (DOM.templateRange === undefined) {
+        throw Error("DOM.templateRange is undefined");
+    }
+    DOM.templateItem ??= document.getElementById("template_item");
+    if (DOM.templateItem === undefined) {
+        throw Error("DOM.templateItem is undefined");
+    }
+    DOM.templateIconDelete ??= document.getElementById("template_icon-delete");
+    if (DOM.templateIconDelete === undefined) {
+        throw Error("DOM.templateIconDelete is undefined");
+    }
+
+    DOM.buttonHistory.onclick = DOMButtonHistoryOnclick;
+    DOM.buttonClear.onclick = DOMButtonClearOnclick;
+    DOM.buttonMore.onclick = DOMButtonMoreOnclick;
+
+    DOM.inputSearch.oninput = DOMInputSearchOninput;
+    DOM.buttonSearch.onclick = DOMButtonSearchOnclick;
+
+    DOM.container.onscroll = DOMContainerOnscroll;
+    DOM.container.onclick = DOMCointainerOnclick;
+
+    DOM.modalConfig.onclick = DOMModalConfigOnclick;
+    DOM.selectOpen.onchange = DOMSelectOpenOnchange;
+    DOM.selectFocus.onchange = DOMSelectFocusOnchange;
+
+    CurrentTab = (
+        await chrome.tabs.query({active: true, currentWindow: true})
+    )[0];
+
+    chrome.storage.local.get(undefined, getStorage);
+    chrome.history.search(SearchOptions, handleSearch);
+}
+window.addEventListener("DOMContentLoaded", main);

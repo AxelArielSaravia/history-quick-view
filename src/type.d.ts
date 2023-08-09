@@ -1,5 +1,7 @@
 //All this data is from https://developer.chrome.com/docs/extensions/reference/history/
 
+type maybe<T> = T | undefined;
+
 //The transition type for this visit from its referrer
 type TransitionType = (
     "link"
@@ -81,7 +83,7 @@ type QueryDetails = {
 };
 
 //You cannot use Promises and callbacks on the same function call
-interface ChromeHistory_I {
+interface ChromeHistorier {
     addUrl(details: UrlDetails, callback?: () => undefined): Promise<undefined>,
     deleteAll(callback?: () => undefined): Promise<undefined>,
     deleteRange(range: TimeDetails, callback?: () => undefined): Promise<undefined>,
@@ -91,13 +93,13 @@ interface ChromeHistory_I {
         callback?: (results: Array<VisitItem>) => undefined
     ): Promise<Array<VisitItem>>,
     search(
-        query: Array<HistoryItem>,
+        query: QueryDetails,
         callback: (results: Array<HistoryItem>) => undefined
     ): Promise<Array<HistoryItem>>,
 }
 
-interface Chrome_I {
-    history: ChromeHistory_I
+interface Chromer {
+    history: ChromeHistorier
 }
 
-declare var chrome: Chrome_I
+declare var chrome: Chromer
