@@ -3,6 +3,13 @@
 
 //@ts-check
 
+const DOM_BUTTON_ATTR = "data-button";
+const DOM_HHISTORY_V = "0";
+const DOM_HCLEAR_V = "1";
+const DOM_HMORE_V = "2";
+const DOM_HCLOSE_V = "3";
+
+
 const DOM_DISPLAY_ATTR = "data-display";
 const DOM_URL_ATTR = "data-url";
 const DOM_RANGE_ATTR = "data-range";
@@ -12,13 +19,11 @@ const DOM_PARENT_ATTR = "data-parent";
 
 const DOM_ITEM_V = "0";
 const DOM_ITEM_ATTR = `[${DOM_TYPE_ATTR}="${DOM_ITEM_V}"]`;
-const DOM_ITEM_CH = `[${DOM_TYPE_ATTR}="${DOM_ITEM_V}"] *`;
 
 const DOM_DATE_V = "1";
 
 const DOM_BREMOVE_V = "2";
 const DOM_BREMOVE_ATTR = `[${DOM_TYPE_ATTR}="${DOM_BREMOVE_V}"]`;
-const DOM_BREMOVE_CH = `[${DOM_TYPE_ATTR}="${DOM_BREMOVE_V}"] *`;
 
 const DOM_MODAL_V = "3";
 
@@ -29,47 +34,41 @@ const DateFormatter = Intl.DateTimeFormat(undefined, {dateStyle: "full"});
 //DOM
 const DOM = {
     /**
-    @type {maybe<HTMLDivElement>}*/
-    container: undefined,
+    @type {HTMLDivElement | null}*/
+    container: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    inputSearch: undefined,
+    @type {HTMLDivElement | null}*/
+    inputSearch: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    buttonClear: undefined,
+    @type {HTMLDivElement | null}*/
+    headerButtons: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    buttonHistory: undefined,
+    @type {HTMLDivElement | null}*/
+    buttonSearch: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    buttonMore: undefined,
+    @type {HTMLDivElement | null}*/
+    noHistory: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    buttonSearch: undefined,
+    @type {HTMLDivElement | null}*/
+    loading: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    noHistory: undefined,
+    @type {HTMLDivElement | null}*/
+    modalConfig: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    loading: undefined,
+    @type {HTMLDivElement | null}*/
+    modalConfigOpen: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    modalConfig: undefined,
+    @type {HTMLDivElement | null}*/
+    modalConfigFocus: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    selectOpen: undefined,
+    @type {HTMLDivElement | null}*/
+    templateItem: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    selectFocus: undefined,
+    @type {HTMLDivElement | null}*/
+    templateRange: null,
     /**
-    @type {maybe<HTMLDivElement>}*/
-    templateItem: undefined,
-    /**
-    @type {maybe<HTMLDivElement>}*/
-    templateRange: undefined,
-    /**
-    @type {maybe<HTMLDivElement>}*/
-    templateIconDelete: undefined,
+    @type {HTMLDivElement | null}*/
+    templateIconDelete: null,
     /**
     @type {DocumentFragment}*/
     fragment: document.createDocumentFragment(),
@@ -78,8 +77,7 @@ const DOM = {
 
 //state
 const StorageState = {
-    //focusTabs can be: "0" (no) | "1" (yes)
-    focusTabs: "0",
+    focusTabs: false,
     //open can be: "0" (current Tab) | "1" (new tab)
     open: "0",
 };
@@ -103,6 +101,7 @@ const ExtensionState = {
 
 let CurrentTab = undefined;
 
+/**@type {QueryDetails} */
 const SearchOptions = {
     text: "",
     maxResults: ExtensionState.MIN_SEARCDOM_RESULTS,
@@ -234,6 +233,12 @@ const RangeState = {
     }
 };
 
+/**
+@type {(message: string) => never} */
+function panic(message) {
+    throw Error(message);
+}
+
 const url = new URL("http://t.i");
 /**
 @type {(src: string) => string} */
@@ -253,11 +258,11 @@ const TabOptions = {
 @type {(url: string, ctrl: boolean) => undefined}*/
 function openLink(url, ctrl) {
     TabOptions.url = url;
-    TabOptions.active = (StorageState.focusTabs !== "0");
+    TabOptions.active = StorageState.focusTabs;
     if ((StorageState.open === "0") === !ctrl) {
-        chrome.tabs.update(CurrentTab.id, TabOptions);
+        chrome.tabs.update(CurrentTab.id, TabOptions, undefined);
     } else {
-        chrome.tabs.create(TabOptions);
+        chrome.tabs.create(TabOptions, undefined);
     }
 }
 
@@ -286,7 +291,7 @@ function createDOMRange(startTime) {
 }
 
 /**
-@type {(hitem: HistoryItem, startTime: number) => DOMHItem} */
+@type {(hitem: HistoryItem, startTime: number) => HTMLDivElement | never} */
 function createDOMItem(hitem, startTime) {
     var FragmentItem = DOM.templateItem.content.cloneNode(true);
     var DOMItem = FragmentItem.firstElementChild;
@@ -295,6 +300,9 @@ function createDOMItem(hitem, startTime) {
 
     var DOMItemChildren = DOMItem.children;
     var DOMImg = DOMItemChildren[0];
+    if (hitem.url === undefined) {
+        panic("hitem.url is undefined");
+    }
     DOMImg.src = getFavicon(hitem.url);
 
     var DOMTitle = DOMItemChildren[1];
@@ -331,6 +339,7 @@ function searchToDOM(hitems) {
         return;
     }
     var DOMRange;
+    /**@type {maybe<number>}*/
     var rangeIndex;
     if (RangeState.length > 0) {
         DOMRange = DOM.container.lastElementChild;
@@ -353,7 +362,9 @@ function searchToDOM(hitems) {
     while (i < hitems.length) {
         var hitem = hitems[i];
         lastVisitTime = hitem.lastVisitTime;
-
+        if (lastVisitTime === undefined) {
+            panic("hitem.lastVisitTime is undefined");
+        }
         //update range section
         if (TimeState.start > lastVisitTime) {
             TimeState.update(lastVisitTime);
@@ -369,6 +380,9 @@ function searchToDOM(hitems) {
         //    return;
         //}
 
+        if (rangeIndex === undefined) {
+            panic("rangeIndex is undefind");
+        }
         ExtensionState.lastItemId = hitem.id;
         ExtensionState.totalItems += 1;
         RangeState.addCount(rangeIndex);
@@ -415,24 +429,26 @@ function searchAfterDelete() {
     }
 }
 
-function getStorage(data) {
-    var open = data.open;
-    var focusTabs = data.focusTabs;
+/**
+@type {(items: StorageState) => undefined} */
+function getStorage(items) {
+    var open = items.open;
+    var focusTabs = items.focusTabs;
     var set = false;
-    if (open === undefined || (open !== "0" && open !== "1")) {
+    if (open === undefined) {
         set = true;
     } else {
         StorageState.open = open;
-        DOM.selectOpen.value = open;
+        DOM.modalConfigOpen.value = open;
     }
-    if (focusTabs === null || (focusTabs !== "0" && focusTabs !== "1")) {
+    if (focusTabs === undefined) {
         set = true;
     } else {
         StorageState.focusTabs = focusTabs;
-        DOM.selectFocus.value = focusTabs;
+        DOM.modalConfigFocus.checked = focusTabs;
     }
     if (set) {
-        chrome.storage.local.set(StorageState);
+        chrome.storage.local.set(StorageState, undefined);
     }
 }
 
@@ -456,7 +472,7 @@ function DOMDeleteOnclick(type, DOMDelete) {
         }
         const DOMItem = DOMDelete.parentElement.parentElement;
         DeleteURLOptions.url = url;
-        chrome.history.deleteUrl(DeleteURLOptions);
+        chrome.history.deleteUrl(DeleteURLOptions,undefined);
 
         const rangeIndex = RangeState.getIndex(Number(rangeKey));
         if (rangeIndex < 0) {
@@ -481,7 +497,6 @@ function DOMDeleteOnclick(type, DOMDelete) {
         if (rangeKey === null) {
             return;
         }
-
         const rangeIndex = RangeState.getIndex(Number(rangeKey));
         if (rangeIndex < 0) {
             return;
@@ -554,26 +569,22 @@ function DOMInputSearchOninput() {
     DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
 };
 
-
-
 /**
-@type {() => undefined}*/
-function DOMButtonHistoryOnclick() {
-    openLink("chrome://history", false);
-}
-
-/**
-@type {() => undefined}*/
-function DOMButtonClearOnclick() {
-    TabOptions.url = "chrome://settings/clearBrowserData";
-    TabOptions.active = true;
-    chrome.tabs.create(TabOptions);
-}
-
-/**
-@type {() => undefined}*/
-function DOMButtonMoreOnclick() {
-    DOM.modalConfig?.setAttribute(DOM_DISPLAY_ATTR, "1");
+@type {(e:MouseEvent) => undefined}*/
+function DOMHeaderButtonsOnclick(e) {
+    var target = e.target;
+    var buttonType = target.getAttribute(DOM_BUTTON_ATTR);
+    if (buttonType === DOM_HHISTORY_V) {
+        openLink("chrome://history", false);
+    } else if (buttonType === DOM_HCLEAR_V) {
+        TabOptions.url = "chrome://settings/clearBrowserData";
+        TabOptions.active = true;
+        chrome.tabs.create(TabOptions, undefined);
+    } else if (buttonType === DOM_HMORE_V) {
+        DOM.modalConfig?.setAttribute(DOM_DISPLAY_ATTR, "1");
+    } else if (buttonType === DOM_HCLOSE_V) {
+        window.close();
+    }
 }
 
 /**
@@ -587,21 +598,15 @@ function DOMButtonSearchOnclick() {
 function DOMCointainerOnclick(e) {
     var target = e.target;
     var classAttr = target.getAttribute(DOM_TYPE_ATTR);
-    if (classAttr === DOM_BREMOVE_V
-        || target.matches(DOM_BREMOVE_CH)
-    ) {
-        const DOMDelete = target.closest(DOM_BREMOVE_ATTR);
-        const type = DOMDelete.getAttribute(DOM_PARENT_ATTR);
-        DOMDeleteOnclick(type, DOMDelete);
+    if (classAttr === DOM_BREMOVE_V) {
+        const type = target.getAttribute(DOM_PARENT_ATTR);
+        DOMDeleteOnclick(type, target);
         e.preventDefault();
         return;
     }
-    if (classAttr === DOM_ITEM_V
-        || target.matches(DOM_ITEM_CH)
-    ) {
+    if (classAttr === DOM_ITEM_V) {
         if (!e.shiftKey) {
-            const HItem = target.closest(DOM_ITEM_ATTR);
-            const url = HItem.href;
+            const url = target.href;
             openLink(url, e.ctrlKey);
             e.preventDefault();
         }
@@ -611,89 +616,83 @@ function DOMCointainerOnclick(e) {
 function DOMModalConfigOnclick(e) {
     var target = e.target;
     var domType = target.getAttribute(DOM_TYPE_ATTR);
-    if (domType == DOM_MODAL_V
-        || domType === DOM_BREMOVE_V
-        || target.matches(DOM_BREMOVE_CH)
-    ) {
+    if (domType == DOM_MODAL_V || domType === DOM_BREMOVE_V) {
         DOM.modalConfig?.setAttribute("data-display", "0");
     }
 }
 
-function DOMSelectOpenOnchange(e) {
+function DOMModalConfigOpenOnchange(e) {
     var target = e.currentTarget;
     StorageState.open = target.value;
-    chrome.storage.local.set(StorageState);
+    chrome.storage.local.set(StorageState, undefined);
 }
 
-function DOMSelectFocusOnchange(e) {
+function DOMModalConfigFocusOnchange(e) {
     var target = e.currentTarget;
-    StorageState.focusTabs = target.value;
-    chrome.storage.local.set(StorageState);
+    StorageState.focusTabs = target.checked;
+    chrome.storage.local.set(StorageState, undefined);
 }
 
 /**
-@type {() => Promise<undefined>}*/
-async function main() {
-    DOM.loading ??= document.getElementById("loading");
-    if (DOM.loading === undefined) {
-        throw Error("DOM.loading is undefined");
+@type {(result: Array<Tab>) => undefined} */
+function futureMain(result) {
+    CurrentTab = result[0];
+    chrome.history.search(SearchOptions, handleSearch);
+}
+
+/**
+@type {() => undefined}*/
+function main() {
+    DOM.loading = document.getElementById("loading");
+    if (DOM.loading === null) {
+        throw Error("DOM.loading is null");
     }
-    DOM.buttonHistory ??= document.getElementById("button_history");
-    if (DOM.buttonHistory === undefined) {
-        throw Error("DOM.buttonHistory is undefined");
+    DOM.headerButtons = document.getElementById("header_buttons");
+    if (DOM.headerButtons === null) {
+        throw Error("DOM.headerButtons is null");
     }
-    DOM.buttonClear ??= document.getElementById("button_clear");
-    if (DOM.buttonClear === undefined) {
-        throw Error("DOM.buttonClear is undefined");
+    DOM.inputSearch = document.getElementById("input_search");
+    if (DOM.inputSearch === null) {
+        throw Error("DOM.inputSearch is null");
     }
-    DOM.buttonMore ??= document.getElementById("button_more");
-    if (DOM.buttonMore === undefined) {
-        throw Error("DOM.buttonMore is undefined");
+    DOM.buttonSearch = document.getElementById("button_search");
+    if (DOM.buttonSearch === null) {
+        throw Error("DOM.buttonSearch is null");
     }
-    DOM.inputSearch ??= document.getElementById("input_search");
-    if (DOM.inputSearch === undefined) {
-        throw Error("DOM.inputSearch is undefined");
+    DOM.noHistory = document.getElementById("no-history");
+    if (DOM.noHistory === null) {
+        throw Error("DOM.noHistory is null");
     }
-    DOM.buttonSearch ??= document.getElementById("button_search");
-    if (DOM.buttonSearch === undefined) {
-        throw Error("DOM.buttonSearch is undefined");
+    DOM.container = document.getElementById("container");
+    if (DOM.container === null) {
+        throw Error("DOM.container is null");
     }
-    DOM.noHistory ??= document.getElementById("no-history");
-    if (DOM.noHistory === undefined) {
-        throw Error("DOM.noHistory is undefined");
+    DOM.modalConfig = document.getElementById("modal_config");
+    if (DOM.modalConfig === null) {
+        throw Error("DOM.modalConfig is null");
     }
-    DOM.container ??= document.getElementById("container");
-    if (DOM.container === undefined) {
-        throw Error("DOM.container is undefined");
+    DOM.modalConfigOpen = document.getElementById("modal_config-open");
+    if (DOM.modalConfigOpen === null) {
+        throw Error("DOM.modalConfigOpen is null");
     }
-    DOM.modalConfig ??= document.getElementById("modal_config");
-    if (DOM.modalConfig === undefined) {
-        throw Error("DOM.modalConfig is undefined");
+    DOM.modalConfigFocus = document.getElementById("modal_config-focus");
+    if (DOM.modalConfigFocus === null) {
+        throw Error("DOM.modalConfigFocus is null");
     }
-    DOM.selectOpen ??= document.getElementById("select_open");
-    if (DOM.selectOpen === undefined) {
-        throw Error("DOM.selectOpen is undefined");
+    DOM.templateRange = document.getElementById("template_range");
+    if (DOM.templateRange === null) {
+        throw Error("DOM.templateRange is null");
     }
-    DOM.selectFocus ??= document.getElementById("select_focus");
-    if (DOM.selectFocus === undefined) {
-        throw Error("DOM.selectFocus is undefined");
+    DOM.templateItem = document.getElementById("template_item");
+    if (DOM.templateItem === null) {
+        throw Error("DOM.templateItem is null");
     }
-    DOM.templateRange ??= document.getElementById("template_range");
-    if (DOM.templateRange === undefined) {
-        throw Error("DOM.templateRange is undefined");
-    }
-    DOM.templateItem ??= document.getElementById("template_item");
-    if (DOM.templateItem === undefined) {
-        throw Error("DOM.templateItem is undefined");
-    }
-    DOM.templateIconDelete ??= document.getElementById("template_icon-delete");
-    if (DOM.templateIconDelete === undefined) {
-        throw Error("DOM.templateIconDelete is undefined");
+    DOM.templateIconDelete = document.getElementById("template_icon-delete");
+    if (DOM.templateIconDelete === null) {
+        throw Error("DOM.templateIconDelete is null");
     }
 
-    DOM.buttonHistory.onclick = DOMButtonHistoryOnclick;
-    DOM.buttonClear.onclick = DOMButtonClearOnclick;
-    DOM.buttonMore.onclick = DOMButtonMoreOnclick;
+    DOM.headerButtons.onclick = DOMHeaderButtonsOnclick;
 
     DOM.inputSearch.oninput = DOMInputSearchOninput;
     DOM.buttonSearch.onclick = DOMButtonSearchOnclick;
@@ -702,14 +701,13 @@ async function main() {
     DOM.container.onclick = DOMCointainerOnclick;
 
     DOM.modalConfig.onclick = DOMModalConfigOnclick;
-    DOM.selectOpen.onchange = DOMSelectOpenOnchange;
-    DOM.selectFocus.onchange = DOMSelectFocusOnchange;
-
-    CurrentTab = (
-        await chrome.tabs.query({active: true, currentWindow: true})
-    )[0];
+    DOM.modalConfigOpen.onchange = DOMModalConfigOpenOnchange;
+    DOM.modalConfigFocus.onchange = DOMModalConfigFocusOnchange;
 
     chrome.storage.local.get(undefined, getStorage);
-    chrome.history.search(SearchOptions, handleSearch);
+    chrome.tabs.query(
+        {active: true, currentWindow: true},
+        futureMain
+    );
 }
 window.addEventListener("DOMContentLoaded", main);

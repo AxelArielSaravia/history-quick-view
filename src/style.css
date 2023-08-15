@@ -41,6 +41,7 @@ button,select {
 }
 
 button {
+    position: relative;
     display:flex;
     align-items: center;
     justify-content: center;
@@ -68,6 +69,14 @@ button:not(:hover) {
     display: flex;
     align-items:center;
     justify-content:space-between;
+}
+
+.c_shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
 }
 
 
@@ -200,13 +209,14 @@ button:not(:hover) {
     position: absolute;
     top: 5px;
     right: 5px;
+    z-index: 2;
 }
 
 /* date */
 .date {
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 3;
 }
 
 .date:not(:hover) {
@@ -283,11 +293,12 @@ button:not(:hover) {
     position: absolute;
     height: 100%;
     width: 100%;
-    z-index:1;
+    z-index:3;
     inset: 0;
     align-items: center;
     justify-content: center;
 }
+
 .modal::before {
     content: "";
     position: absolute;
@@ -334,6 +345,11 @@ button:not(:hover) {
 
 .modal .config .field {
     padding: 10px;
+}
+
+.modal .config .field input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
 }
 
 .modal .config hr {

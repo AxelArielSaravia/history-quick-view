@@ -12,7 +12,7 @@
             <h1 class="title c_bold">History Quick View</h1>
             <div id="loading" class="loading c_center_children">
                 <svg
-                    class="icon icon-refresh"
+                    class="icon icon-loader"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
                     fill="none"
@@ -21,16 +21,21 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                 >
-                    <polyline points="23 4 23 10 17 10"></polyline>
-                    <polyline points="1 20 1 14 7 14"></polyline>
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
                 </svg>
             </div>
         </div>
-        <div class="right">
+        <div id="header_buttons" class="right">
             <button
-                id="button_history"
-                class="button"
+                data-button="0"
+                class="button c_shell"
                 type="button"
                 title="Go to History"
             >
@@ -50,8 +55,8 @@
                 </svg>
             </button>
             <button
-                id="button_clear"
-                class="button"
+                data-button="1"
+                class="button c_shell"
                 type="button"
                 title="Clear browsing history"
             >
@@ -72,8 +77,8 @@
                 </svg>
             </button>
             <button
-                id="button_more"
-                class="button"
+                data-button="2"
+                class="button c_shell"
                 type="button"
                 title="More"
             >
@@ -90,6 +95,26 @@
                     <circle cx="12" cy="12" r="1"></circle>
                     <circle cx="19" cy="12" r="1"></circle>
                     <circle cx="5" cy="12" r="1"></circle>
+                </svg>
+            </button>
+            <button
+                data-button="3"
+                class="button c_shell"
+                type="button"
+                title="Close"
+            >
+                <svg
+                    class="icon icon-x"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
         </div>
@@ -146,7 +171,7 @@
             <h2 class="c_space-between-children">
                 Configuration
                 <button
-                    class="close c_align-center"
+                    class="close c_align-center c_shell"
                     data-type="2"
                     title="close"
                     type="button"
@@ -170,7 +195,7 @@
                 <p title="Set if the url opens in the current tab or in a new tab">
                     The links will open at:
                 </p>
-                <select id="select_open" name="openLinks">
+                <select id="modal_config-open" name="openLinks">
                     <option value="0">Current Tab</option>
                     <option value="1">New Tab</option>
                 </select>
@@ -179,10 +204,7 @@
                 <p title="When a new tab is opens, go to it (focus it) or stay in your current tab">
                     Focus opened tabs:
                 </p>
-                <select id="select_focus" name="focusTabs">
-                    <option value="0">No</option>
-                    <option value="1">Yes</option>
-                </select>
+                <input id="modal_config-focus" name="focus" type="checkbox">
             </div>
             <hr/>
             <div class="socials c_space-between-children">
@@ -192,6 +214,7 @@
                     href="https://github.com/AxelArielSaravia/quick-history-view"
                     target="_blank"
                     rel="noreferrer noopener"
+                    aria-label="github"
                 >
                     <svg
                         class="icon icon-github"
@@ -214,7 +237,7 @@
             <div class="date" data-type="1">
                 <h2 class="title"></h2>
                 <button
-                    class="button"
+                    class="button c_shell"
                     data-type="2"
                     data-parent="1"
                     data-range=""
@@ -227,18 +250,18 @@
     </template>
     <template id="template_item">
         <a
-            class="item"
+            class="item c_shell"
             data-type="0"
             href=""
             target="_blank"
             title=""
             rel="noopener noreferrer"
         >
-            <img class="favicon" src="" alt="favicon"/>
+            <img class="favicon" src="" alt="favicon" width="16" height="16"/>
             <p class="title"></p>
             <div class="right">
                 <button
-                    class="button"
+                    class="button c_shell"
                     data-type="2"
                     data-parent="0"
                     data-range=""

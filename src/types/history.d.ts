@@ -1,7 +1,5 @@
 //All this data is from https://developer.chrome.com/docs/extensions/reference/history/
 
-type maybe<T> = T | undefined;
-
 //The transition type for this visit from its referrer
 type TransitionType = (
     "link"
@@ -22,18 +20,18 @@ type HistoryItem = {
     id: string,
 
     //When this page was last loaded, represented in milliseconds since the epoch.
-    lasVisitTime?: number,
+    lastVisitTime: maybe<number>,
 
     //The title of the page when it was last loaded.
-    title?: string,
+    title: maybe<string>,
 
     //The number of times the user has navigated to this page by typing in the address.
-    typedCOunt?: number,
+    typedCOunt: maybe<number>,
 
-    url?: string,
+    url: maybe<string>,
 
     //The number of times the user has navigated to this page.
-    visitCount?: number,
+    visitCount: maybe<number>,
 };
 
 type VisitItem = {
@@ -54,7 +52,7 @@ type VisitItem = {
     visitId: string,
 
     //When this visit occurred, represented in milliseconds since the epoch.
-    visitTime?: number,
+    visitTime: maybe<number>,
 };
 
 type UrlDetails = {url: string};
@@ -69,37 +67,41 @@ type TimeDetails = {
 
 type QueryDetails = {
     //Limit results to those visited before this date, represented in milliseconds since the epoch
-    endTime?: number,
+    endTime: maybe<number>,
 
     //The maximum number of result to retrieve. Default to 100.
-    maxResult?: number,
+    maxResults: maybe<number>,
 
     //Limit results to those visited after this date, represented in
     //milliseconds since the epoch. Default to 24 hours in the past.
-    startTime?: number,
+    startTime: maybe<number>,
 
     //A free-text query to the history service. Leave empty to retrieve all pages.
     text: string,
 };
 
 //You cannot use Promises and callbacks on the same function call
-interface ChromeHistorier {
-    addUrl(details: UrlDetails, callback?: () => undefined): Promise<undefined>,
-    deleteAll(callback?: () => undefined): Promise<undefined>,
-    deleteRange(range: TimeDetails, callback?: () => undefined): Promise<undefined>,
-    deleteUrl(details: UrlDetails, callback?: () => undefined): Promise<undefined>,
-    getVisits(
+type Historier  = {
+    addUrl: (
         details: UrlDetails,
-        callback?: (results: Array<VisitItem>) => undefined
-    ): Promise<Array<VisitItem>>,
-    search(
+        callback: maybe<() => undefined>
+    ) => Promise<undefined>,
+    deleteAll: (callback: maybe<() => undefined>) => Promise<undefined>,
+    deleteRange: (
+        range: TimeDetails,
+        callback: maybe<() => undefined>
+    ) => Promise<undefined>,
+    deleteUrl: (
+        details: UrlDetails,
+        callback: maybe<() => undefined>
+    ) => Promise<undefined>,
+    getVisits: (
+        details: UrlDetails,
+        callback: maybe<(results: Array<VisitItem>) => undefined>
+    ) => Promise<Array<VisitItem>>,
+    search: (
         query: QueryDetails,
         callback: (results: Array<HistoryItem>) => undefined
-    ): Promise<Array<HistoryItem>>,
-}
+    ) => Promise<Array<HistoryItem>>,
+};
 
-interface Chromer {
-    history: ChromeHistorier
-}
-
-declare var chrome: Chromer

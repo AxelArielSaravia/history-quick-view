@@ -5,16 +5,16 @@
 # tdewolff/minify to minify html, css and json (https://github.com/tdewolff/minify)
 
 bun build ./src/main.js --outdir ./extension --minify
-echo JS build and minified successfully
+echo JS build and minified success
 
-minify -o ./extension/popup.html ./src/popup.html
-echo HTML minified successfully
+minify -o ./extension/index.html ./src/index.html
+echo HTML minified success
 
 minify -o ./extension/style.css ./src/style.css
-echo CSS minified successfully
+echo CSS minified success
 
 minify -o ./extension/manifest.json ./src/manifest.json
-echo json minified successfully
+echo json minified success
 
 cp -dr ./src/images ./extension
-echo Images copyed successfully
+echo Images copyed success
