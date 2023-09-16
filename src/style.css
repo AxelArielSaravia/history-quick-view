@@ -1,10 +1,5 @@
 :root {
     --font: verdada,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
-    --color: #efe8e8;
-    --color-bg: #3d3d3d;
-    --color-bg-d: #2b2b2b;
-    --color-hover: #4f4d4d;
-    --color-hover-l: #656363;
     --icon-size-n: 20px;
     --icon-size-s: 15px;
     --font-size-n: 1.4rem;
@@ -13,9 +8,29 @@
     --item-height: 35px;
     --item-padding: 0 8px;
 
+    font-size: 10px;
+}
+
+:root.dark {
+    --color: #efe8e8;
+    --color-bg: #3d3d3d;
+    --color-bg-d: #2b2b2b;
+
+    --color-hover: #4f4d4d;
+    --color-hover-l: #656363;
     accent-color: #3d3d3d;
     color-scheme: dark;
-    font-size: 10px;
+}
+
+:root.light {
+    --color: #3d3d3d;
+    --color-bg: #efe8e8;
+    --color-bg-d: #ddd6d6;
+
+    --color-hover: #fff7f7;
+    --color-hover-l: #ffffff;
+    accent-color: #efe8e8;
+    color-scheme: light;
 }
 
 body {
@@ -176,7 +191,7 @@ button:not(:hover) {
 }
 .content .container::-webkit-scrollbar-thumb {
     /* color of the scroll thumb */
-    background-color:var(--color-hover-l);
+    background-color:var(--color-hover);
 }
 
 .content .button:hover {

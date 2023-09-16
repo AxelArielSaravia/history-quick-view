@@ -56,6 +56,9 @@ const DOM = {
     modalConfig: null,
     /**
     @type {HTMLDivElement | null}*/
+    modalConfigTheme: null,
+    /**
+    @type {HTMLDivElement | null}*/
     modalConfigOpen: null,
     /**
     @type {HTMLDivElement | null}*/
@@ -80,6 +83,9 @@ const StorageState = {
     focusTabs: false,
     //open can be: "0" (current Tab) | "1" (new tab)
     open: "0",
+    /**
+    @type {"dark"|"light"} */
+    theme: "dark",
 };
 
 const ExtensionState = {
@@ -434,6 +440,7 @@ function searchAfterDelete() {
 function getStorage(items) {
     var open = items.open;
     var focusTabs = items.focusTabs;
+    var theme = items.theme;
     var set = false;
     if (open === undefined) {
         set = true;
@@ -446,6 +453,12 @@ function getStorage(items) {
     } else {
         StorageState.focusTabs = focusTabs;
         DOM.modalConfigFocus.checked = focusTabs;
+    }
+    if (theme === undefined) {
+        set = true;
+    } else {
+        StorageState.theme = theme;
+        document.firstElementChild?.setAttribute("class", theme);
     }
     if (set) {
         chrome.storage.local.set(StorageState, undefined);
@@ -460,6 +473,7 @@ const DeleteRangeOptions = {
     endTime:0,
     startTime: 0
 };
+
 
 /**
 @type {(type: string, DOMDelete: HTMLButtonElement) => undefined}*/
@@ -527,7 +541,7 @@ function DOMContainerOnscroll(e) {
     const target = e.currentTarget;
 
     //end of the current scroll
-    if (target.scrollTop === target.scrollHeight - target.clientHeight) {
+    if (target.scrollTop >= target.scrollHeight - target.clientHeight - 50) {
         DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
         chrome.history.search(SearchOptions, searchToDOM);
     }
@@ -595,7 +609,21 @@ function DOMButtonSearchOnclick() {
 }
 
 
-function DOMCointainerOnclick(e) {
+/**
+@type {(e: MouseEvent) => undefined} */
+function DOMContainerOnauxclick(e) {
+    var target = e.target;
+    var DOMType = target.getAttribute(DOM_TYPE_ATTR);
+    if (DOMType === DOM_ITEM_V) {
+        e.preventDefault();
+        var href = target.getAttribute("href");
+        TabOptions.url = href;
+        TabOptions.active = StorageState.focusTabs;
+        chrome.tabs.create(TabOptions, undefined);
+    }
+}
+
+function DOMContainerOnclick(e) {
     var target = e.target;
     var classAttr = target.getAttribute(DOM_TYPE_ATTR);
     if (classAttr === DOM_BREMOVE_V) {
@@ -619,6 +647,14 @@ function DOMModalConfigOnclick(e) {
     if (domType == DOM_MODAL_V || domType === DOM_BREMOVE_V) {
         DOM.modalConfig?.setAttribute("data-display", "0");
     }
+}
+
+
+function DOMModalConfigThemeOnchange(e) {
+    var target = e.currentTarget;
+    StorageState.theme = target.value;
+    document.firstElementChild?.setAttribute("class", target.value);
+    chrome.storage.local.set(StorageState, undefined);
 }
 
 function DOMModalConfigOpenOnchange(e) {
@@ -671,6 +707,10 @@ function main() {
     if (DOM.modalConfig === null) {
         throw Error("DOM.modalConfig is null");
     }
+    DOM.modalConfigTheme = document.getElementById("modal_config-theme");
+    if (DOM.modalConfigTheme === null) {
+        throw Error("DOM.modalConfigTheme is null");
+    }
     DOM.modalConfigOpen = document.getElementById("modal_config-open");
     if (DOM.modalConfigOpen === null) {
         throw Error("DOM.modalConfigOpen is null");
@@ -698,9 +738,11 @@ function main() {
     DOM.buttonSearch.onclick = DOMButtonSearchOnclick;
 
     DOM.container.onscroll = DOMContainerOnscroll;
-    DOM.container.onclick = DOMCointainerOnclick;
+    DOM.container.onclick = DOMContainerOnclick;
+    DOM.container.onauxclick = DOMContainerOnauxclick;
 
     DOM.modalConfig.onclick = DOMModalConfigOnclick;
+    DOM.modalConfigTheme.onchange = DOMModalConfigThemeOnchange;
     DOM.modalConfigOpen.onchange = DOMModalConfigOpenOnchange;
     DOM.modalConfigFocus.onchange = DOMModalConfigFocusOnchange;
 
