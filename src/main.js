@@ -171,7 +171,7 @@ const RangeState = {
     getIndex(target) {
         var arr = RangeState.start;
         var end = arr.length;
-        if (end < 5) {
+        if (end < 11) {
             return arr.indexOf(target);
         }
         //binary search
@@ -414,24 +414,25 @@ function searchToDOM(hitems) {
 @type {(hItems: Array<HistoryItem>) => undefined}*/
 function handleSearch(HItems) {
     searchToDOM(HItems);
-    if (ExtensionState.totalItems < 1) {
+    if (ExtensionState.historyFinished) {
         DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "1");
         return;
+    } else {
+        DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "0");
     }
-    DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "0");
 }
 
 /**
 @type {() => undefined}*/
 function searchAfterDelete() {
-    if (ExtensionState.totalItems < 1) {
+    if (ExtensionState.historyFinished) {
         DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "1");
         return;
-    }
-    if (!ExtensionState.historyFinished
-        && DOM.container.clientHeight === DOM.container.scrollHeight
-    ) {
-        chrome.history.search(SearchOptions, handleSearch);
+    } else {
+        if (DOM.container.clientHeight === DOM.container.scrollHeight) {
+            DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
+            chrome.history.search(SearchOptions, handleSearch);
+        }
     }
 }
 
