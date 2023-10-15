@@ -26,7 +26,7 @@ This extension is created for my own necessities. If you have some bugs or you n
 | --- | ---|
 | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> or <kbd>Ctrl</kbd> + mouse click| Opens the url in a contrary way of the configurations
 | <kbd>Shift</kbd> + <kbd>Enter</kbd> or <kbd>Shift</kbd> + mouse click| Opens the url in a new windows |
-| <kbd>g</kbd> | Delete History link |
+| <kbd>G</kbd> | Delete the url selected |
 
 ---
 
