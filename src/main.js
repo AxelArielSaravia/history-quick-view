@@ -1,35 +1,58 @@
 // Axel Ariel Saravia
 // 02-08-2023 (Latam format)
-
 //@ts-check
 
-const DOM_BUTTON_ATTR = "data-button";
-const DOM_HHISTORY_V = "0";
-const DOM_HCLEAR_V = "1";
-const DOM_HMORE_V = "2";
-const DOM_HCLOSE_V = "3";
+const MAX_SEARCH_RESULTS = 30;
+const MIN_SEARCH_RESULTS = 20;
 
+//60000ms = 1m
+//transform the getTimesoneOffset minutes values to miliseconds
+const TIME_OFFSET = 60000 * (new Date()).getTimezoneOffset();
 
-const DOM_DISPLAY_ATTR = "data-display";
-const DOM_URL_ATTR = "data-url";
-const DOM_RANGE_ATTR = "data-range";
+const ATTR_DATA_BUTTON   = "data-button";
+const ATTR_DATA_DISPLAY  = "data-display";
+const ATTR_DATA_URL      = "data-url";
+const ATTR_DATA_TYPE     = "data-type";
+const ATTR_DATA_SET      = "data-set";
+const ATTR_DATA_RANGE    = "data-range";
 
-const DOM_TYPE_ATTR = "data-type";
-const DOM_PARENT_ATTR = "data-parent";
+const DATA_BUTTON_HISTORY   = "0";
+const DATA_BUTTON_CLEAR     = "1";
+const DATA_BUTTON_MORE      = "2";
+const DATA_BUTTON_CLOSE     = "3";
 
-const DOM_ITEM_V = "0";
-const DOM_ITEM_ATTR = `[${DOM_TYPE_ATTR}="${DOM_ITEM_V}"]`;
+const DATA_TYPE_ITEM    = "0";
+const DATA_TYPE_DATE    = "1";
+const DATA_TYPE_BREMOVE = "2";
+const DATA_TYPE_MODAL   = "3";
 
-const DOM_DATE_V = "1";
-
-const DOM_BREMOVE_V = "2";
-const DOM_BREMOVE_ATTR = `[${DOM_TYPE_ATTR}="${DOM_BREMOVE_V}"]`;
-
-const DOM_MODAL_V = "3";
-
-//Date TimeState Formatters
 const TimeStateFormatter = Intl.DateTimeFormat(undefined, {timeStyle: "short"});
 const DateFormatter = Intl.DateTimeFormat(undefined, {dateStyle: "full"});
+
+const url = new URL("a:a.a");
+
+const TabOptions = {
+    active: false,
+    url: ""
+};
+const UrlDetails = {
+    url: ""
+};
+const DeleteRangeOptions = {
+    endTime:0,
+    startTime: 0
+};
+/**
+@type {QueryDetails} */
+const SearchOptions = {
+    text:       "",
+    maxResults: MAX_SEARCH_RESULTS,
+    startTime:  0,  //ms
+    endTime:    0   //ms
+};
+
+var CurrentTab = undefined;
+var SearchTimeout = undefined;
 
 //DOM
 const DOM = {
@@ -77,8 +100,6 @@ const DOM = {
     fragment: document.createDocumentFragment(),
 };
 
-
-//state
 const StorageState = {
     focusTabs: false,
     //open can be: "0" (current Tab) | "1" (new tab)
@@ -88,55 +109,112 @@ const StorageState = {
     theme: "dark",
 };
 
-const ExtensionState = {
-    MIN_SEARCDOM_RESULTS: 30,
-    lastItemId: "",
-    totalItems: 0,
-    historyFinished: false,
-    //mode can be: "d" (default) | "s" (search)
+const HistoryState = {
+    lastId: "",
+    total: 0,
+    noMoreContent: false,
+    lastDOMRangeIsFull: false,
+    itemsCreated: 0,
+    /**
+    @type {"d" | "s"}*/ //"d" default and "s" search
     mode: "d",
 
-    /**
-    @type {() => undefined} */
     reset() {
-        ExtensionState.lastItemId = "";
-        ExtensionState.totalItems = 0;
-        ExtensionState.historyFinished = false;
+        HistoryState.lastId = "";
+        HistoryState.total = 0;
+        HistoryState.noMoreContent = false;
+        HistoryState.lastDOMRangeIsFull = false;
+        HistoryState.itemsCreated = 0;
     }
 };
 
-let CurrentTab = undefined;
-
-/**@type {QueryDetails} */
-const SearchOptions = {
-    text: "",
-    maxResults: ExtensionState.MIN_SEARCDOM_RESULTS,
-    startTime: 0,       //ms
-    endTime: Date.now() //ms
-};
-
-const TimeState = {
-    //60000ms = 1m
-    //transform the getTimesoneOffset minutes values to miliseconds
-    OFFSET: 60000 * (new Date()).getTimezoneOffset(),
-    start: SearchOptions.endTime,
-    end: SearchOptions.endTime,
-
-    //Methods
+const Visited = {
     /**
-    @type {(ms: number) => undefined} */
-    update(ms) {
-        TimeState.end = TimeState.start;
-        //86400000ms = 24hs
-        //set the 00:00hs of the day that represents ms
-        TimeState.start = ms - ((ms - TimeState.OFFSET) % 86400000);
+    @type {Array<string>} */
+    ids: [],
+    /**
+    @type {(id: string) => number} */
+    add(id) {
+        var len = Visited.ids.length;
+        var lst = len - 1;
+        var fst = 0;
+        var mid = 0;
+        while (fst <= lst) {
+            mid = Math.floor((fst + lst) / 2);
+            var s = Visited.ids[mid];
+            if (id < s) {
+                lst = mid - 1;
+            } else if (id > s) {
+                fst = mid + 1;
+            } else {
+                return mid;
+            }
+        }
+        if (fst === len) {
+            Visited.ids.push(id);
+        } else {
+            Visited.ids.length += 1;
+            Visited.ids.copyWithin(fst + 1, fst, len);
+            Visited.ids[fst] = id;
+        }
+        return fst;
     },
     /**
-    @type {() => undefined} */
+    @type {(id: string) => boolean} */
+    has(id) {
+        var len = Visited.ids.length;
+        var lst = len - 1;
+        var fst = 0;
+        var mid = 0;
+        while (fst <= lst) {
+            mid = Math.floor((fst + lst) / 2);
+            var s = Visited.ids[mid];
+            if (id < s) {
+                lst = mid - 1;
+            } else if (id > s) {
+                fst = mid + 1;
+            } else {
+                return true;
+            }
+        }
+        return false;
+    },
     reset() {
-        var now = Date.now();
-        TimeState.end = now;
-        TimeState.start = now;
+        Visited.ids.length = 0;
+    },
+    /**
+    @type {(visits: Array<VisitItem>, rangeEnd: number) => number} */
+    getClosestVisit(visits, rangeEnd) {
+        var s;
+        if (visits.length < 6) {
+            for (var i = visits.length - 1; i >= 0; i -= 1) {
+                s = visits[i];
+                if (s.visitTime < rangeEnd) {
+                    return s.visitTime;
+                }
+            }
+        } else {
+            var lst = visits.length - 1;
+            var fst = 0;
+            var mid = 0;
+            while (fst <= lst) {
+                mid = Math.floor((fst + lst) / 2);
+                s = visits[mid];
+                if (rangeEnd < s.visitTime) {
+                    lst = mid - 1;
+                } else if (rangeEnd > s.visitTime) {
+                    fst = mid + 1;
+                } else {
+                    return 0;
+                }
+            }
+            if (lst < 0) {
+                return 0;
+            } else {
+                return visits[lst].visitTime;
+            }
+        }
+        return 0;
     }
 };
 
@@ -155,15 +233,38 @@ const RangeState = {
     length: 0,
 
     //Methods
+    //86400000ms = 24hs
     /**
-    @type {(i: number) => boolean}*/
-    addCount(i) {
-        const countArr = RangeState.count;
-        if (i < 0 || countArr.length <= i) {
+    @type {(ms: number) => number} */
+    createStart(ms) {
+        return ms - ((ms - TIME_OFFSET) % 86400000);
+    },
+    /**
+    @type {() => boolean}*/
+    addCount() {
+        if (RangeState.length > 0) {
+            const countArr = RangeState.count;
+            countArr[RangeState.length - 1] += 1;
+            return true;
+        } else {
             return false;
         }
-        countArr[i] += 1;
-        return true;
+    },
+    /**
+    @type {() => number} */
+    getLastEnd() {
+        if (RangeState.length > 0) {
+            return RangeState.end[RangeState.length - 1];
+        }
+        return -1;
+    },
+    /**
+    @type {() => number} */
+    getLastStart() {
+        if (RangeState.length > 0) {
+            return RangeState.start[RangeState.length - 1];
+        }
+        return -1;
     },
     // target is start element
     /**
@@ -179,7 +280,7 @@ const RangeState = {
         var mid = 0 ;
         var el = 0;
         while (str < end) {
-            mid = str + Math.floor((end - str) / 2);
+            mid = Math.floor((str + end) / 2);
             el = arr[mid];
             if (target === el) {
                 return mid;
@@ -218,12 +319,19 @@ const RangeState = {
     //Return the index of the data
     /**
     @type {(end: number, start: number) => number}*/
-    set(end, start) {
+    create(end, start) {
         RangeState.end.push(end);
         RangeState.start.push(start);
         RangeState.count.push(0);
         RangeState.length += 1
         return RangeState.length - 1;
+    },
+    /**
+    @type {(ms: number) => number} */
+    from(ms) {
+        var start = RangeState.createStart(ms);
+        RangeState.create(start + 86400000, start);
+        return start + 86400000;
     },
     /**
     @type {(index: number) => boolean}*/
@@ -243,197 +351,6 @@ const RangeState = {
 @type {(message: string) => never} */
 function panic(message) {
     throw Error(message);
-}
-
-const url = new URL("http://t.i");
-/**
-@type {(src: string) => string} */
-function getFavicon(src) {
-    url.href = chrome.runtime.getURL("/_favicon/");
-    url.searchParams.set("pageUrl", src);
-    url.searchParams.set("size", "16");
-    return url.toString();
-}
-
-const TabOptions = {
-    active: false,
-    url: ""
-};
-
-/**
-@type {(url: string, ctrl: boolean) => undefined}*/
-function openLink(url, ctrl) {
-    TabOptions.url = url;
-    TabOptions.active = StorageState.focusTabs;
-    if ((StorageState.open === "0") === !ctrl) {
-        chrome.tabs.update(CurrentTab.id, TabOptions, undefined);
-    } else {
-        chrome.tabs.create(TabOptions, undefined);
-    }
-}
-
-/**
-@type {(startTime: number) => DOMHRange} */
-function createDOMRange(startTime) {
-    const FragmentRange = DOM.templateRange.content.cloneNode(true);
-    const DOMRange = FragmentRange.firstElementChild;
-
-    //Range header
-    const DOMDate = DOMRange.firstElementChild;
-    const DOMDTitle = DOMDate.firstElementChild;
-    const dateFormat = DateFormatter.format(startTime);
-    DOMDTitle.textContent = dateFormat;
-
-    const DOMDDelete = DOMDate.lastElementChild;
-    if (ExtensionState.mode === "d") {
-        DOMDDelete.title = `Remove all browsing history form ${dateFormat}`;
-        DOMDDelete.setAttribute(DOM_RANGE_ATTR, String(startTime));
-        DOMDDelete.appendChild(DOM.templateIconDelete.content.cloneNode(true));
-    } else {
-        DOMDDelete.setAttribute(DOM_DISPLAY_ATTR, "0");
-    }
-
-    return DOMRange;
-}
-
-/**
-@type {(hitem: HistoryItem, startTime: number) => HTMLDivElement | never} */
-function createDOMItem(hitem, startTime) {
-    var FragmentItem = DOM.templateItem.content.cloneNode(true);
-    var DOMItem = FragmentItem.firstElementChild;
-    DOMItem.href = hitem.url;
-    DOMItem.title = hitem.title + "\n" + hitem.url;
-
-    var DOMItemChildren = DOMItem.children;
-    var DOMImg = DOMItemChildren[0];
-    if (hitem.url === undefined) {
-        panic("hitem.url is undefined");
-    }
-    DOMImg.src = getFavicon(hitem.url);
-
-    var DOMTitle = DOMItemChildren[1];
-    if (hitem.title === "") {
-        DOMTitle.textContent = hitem.url;
-    } else {
-        DOMTitle.textContent = hitem.title;
-    }
-
-    var DOMRight = DOMItemChildren[2];
-
-
-    var DOMRDelete = DOMRight.firstElementChild;
-    DOMRDelete.setAttribute(DOM_URL_ATTR, hitem.url);
-    DOMRDelete.setAttribute(DOM_RANGE_ATTR, String(startTime));
-    DOMRDelete.appendChild(DOM.templateIconDelete.content.cloneNode(true));
-
-    var DOMRTime = DOMRight.lastElementChild;
-    DOMRTime.textContent = TimeStateFormatter.format(hitem.lastVisitTime);
-
-    return DOMItem;
-}
-
-/**
-@type {(hitems: Array<HistoryItem>) => undefined}*/
-function searchToDOM(hitems) {
-    if (hitems.length < 1
-        // see the error below
-        || (hitems.length === 1 && hitems[0].id === ExtensionState.lastItemId)
-    ) {
-        console.info("No more History");
-        ExtensionState.historyFinished = true;
-        DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "0");
-        return;
-    }
-    var DOMRange;
-    /**@type {maybe<number>}*/
-    var rangeIndex;
-    if (RangeState.length > 0) {
-        DOMRange = DOM.container.lastElementChild;
-        DOM.fragment.appendChild(DOMRange);
-
-        rangeIndex = RangeState.getIndex(TimeState.start);
-    }
-    var lastVisitTime;
-    var i = 0;
-
-    //Exist an error in the History API:
-    // If the diference between th endTime parameter in search method call
-    // and the lastVisitTime of a HistoryItem is less than 470ms,
-    // that HistoryItem is the first element of the new array
-    //We need to check if this error continue happens
-    if (hitems[0].id === ExtensionState.lastItemId) {
-        i = 1;
-    }
-
-    while (i < hitems.length) {
-        var hitem = hitems[i];
-        lastVisitTime = hitem.lastVisitTime;
-        if (lastVisitTime === undefined) {
-            panic("hitem.lastVisitTime is undefined");
-        }
-        //update range section
-        if (TimeState.start > lastVisitTime) {
-            TimeState.update(lastVisitTime);
-
-            rangeIndex = RangeState.set(TimeState.end, TimeState.start);
-            DOMRange = createDOMRange(TimeState.start);
-            DOM.fragment.appendChild(DOMRange);
-        }
-        //bad call, this is associate with the upper Error
-        //else if (RangeState.length === 0) {
-        //    console.warn("WARNING: The History return bad items.");
-        //    DOMHContainer.onscroll = null;
-        //    return;
-        //}
-
-        if (rangeIndex === undefined) {
-            panic("rangeIndex is undefind");
-        }
-        ExtensionState.lastItemId = hitem.id;
-        ExtensionState.totalItems += 1;
-        RangeState.addCount(rangeIndex);
-
-        const DOMItem = createDOMItem(hitem, TimeState.start);
-
-        DOMRange.appendChild(DOMItem);
-
-        i += 1;
-    }
-
-    if (lastVisitTime !== undefined) {
-        //The next search must have a diference of 500ms with the
-        //last history item lastVisitTime. But sometimes breaks
-        SearchOptions.endTime = lastVisitTime;
-        DOM.container.appendChild(DOM.fragment);
-    }
-    DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "0");
-
-}
-
-/**
-@type {(hItems: Array<HistoryItem>) => undefined}*/
-function handleSearch(HItems) {
-    searchToDOM(HItems);
-    if (ExtensionState.historyFinished) {
-        DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "1");
-        return;
-    } else {
-        DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "0");
-    }
-}
-
-/**
-@type {() => undefined}*/
-function searchAfterDelete() {
-    if (ExtensionState.historyFinished) {
-        DOM.noHistory.setAttribute(DOM_DISPLAY_ATTR, "1");
-        return;
-    } else {
-        if (DOM.container.clientHeight === DOM.container.scrollHeight) {
-            DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
-            chrome.history.search(SearchOptions, handleSearch);
-        }
-    }
 }
 
 /**
@@ -466,28 +383,309 @@ function getStorage(items) {
     }
 }
 
-const DeleteURLOptions = {
-    url: ""
-};
+/**
+@type {(src: string) => string} */
+function getFavicon(src) {
+    url.href = chrome.runtime.getURL("/_favicon/");
+    url.searchParams.set("pageUrl", src);
+    url.searchParams.set("size", "16");
+    return url.toString();
+}
 
-const DeleteRangeOptions = {
-    endTime:0,
-    startTime: 0
-};
+/**
+@type {(url: string, ctrl: boolean) => undefined}*/
+function openLink(url, ctrl) {
+    TabOptions.url = url;
+    TabOptions.active = StorageState.focusTabs;
+    if ((StorageState.open === "0") === !ctrl) {
+        chrome.tabs.update(CurrentTab.id, TabOptions, undefined);
+    } else {
+        chrome.tabs.create(TabOptions, undefined);
+    }
+}
 
+/**
+@type {(startTime: number) => DOMHRange} */
+function createDOMRange(startTime) {
+    var FragmentRange = DOM.templateRange.content.cloneNode(true);
+    var DOMRange = FragmentRange.firstElementChild;
+    DOMRange.setAttribute("data-range", String(startTime));
+
+    //Range header
+    var DOMDate = DOMRange.firstElementChild;
+    var DOMDTitle = DOMDate.firstElementChild;
+    var dateFormat = DateFormatter.format(startTime);
+    DOMDTitle.textContent = dateFormat;
+
+    var DOMDDelete = DOMDate.lastElementChild;
+    if (HistoryState.mode === "d") {
+        DOMDDelete.title = `Remove all browsing history form ${dateFormat}`;
+        DOMDDelete.appendChild(DOM.templateIconDelete.content.cloneNode(true));
+        DOMDDelete.setAttribute(ATTR_DATA_RANGE, String(startTime));
+    } else {
+        DOMDDelete.setAttribute(ATTR_DATA_DISPLAY, "0");
+    }
+    return DOMRange;
+}
+
+/**
+@type {(
+    hitem: HistoryItem,
+    visitTime: number,
+    startTime: number
+) => HTMLDivElement | never} */
+function createDOMItem(hitem, visitTime, startTime) {
+    var FragmentItem = DOM.templateItem.content.cloneNode(true);
+    var DOMItem = FragmentItem.firstElementChild;
+    DOMItem.href = hitem.url;
+    DOMItem.title = hitem.title + "\n" + hitem.url;
+
+    var DOMItemChildren = DOMItem.children;
+    var DOMImg = DOMItemChildren[0];
+    if (hitem.url === undefined) {
+        panic("hitem.url is undefined");
+    }
+    DOMImg.src = getFavicon(hitem.url);
+
+    var DOMTitle = DOMItemChildren[1];
+    if (hitem.title === "") {
+        DOMTitle.textContent = hitem.url;
+    } else {
+        DOMTitle.textContent = hitem.title;
+    }
+
+    var DOMRight = DOMItemChildren[2];
+
+    var DOMRDelete = DOMRight.firstElementChild;
+    DOMRDelete.setAttribute(ATTR_DATA_URL, hitem.url);
+    DOMRDelete.setAttribute(ATTR_DATA_RANGE, String(startTime));
+    DOMRDelete.appendChild(DOM.templateIconDelete.content.cloneNode(true));
+
+    var DOMRTime = DOMRight.lastElementChild;
+    DOMRTime.textContent = TimeStateFormatter.format(visitTime);
+
+    return DOMItem;
+}
+
+function initSerachToDOM(hitems) {
+    if (hitems.length < 1 || (hitems.length === 1 && hitems[0].id === HistoryState.lastId)) {
+        HistoryState.noMoreContent = true;
+        DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "0");
+        DOM.noHistory.setAttribute(ATTR_DATA_DISPLAY, "1");
+        return;
+    }
+    var rangeEnd = hitems[0].lastVisitTime;
+    var rangeStart = RangeState.createStart(rangeEnd);
+    RangeState.create(rangeEnd, rangeStart);
+
+    var item;
+    var i = 0;
+    var newRange = false;
+    while (i < hitems.length) {
+        item = hitems[i];
+        if (
+            (item.visitCount !== undefined && item.visitCount > 1)
+            || (item.typedCount !== undefined && item.typedCount > 0)
+        ) {
+            Visited.add(item.id);
+        }
+        if (item.lastVisitTime < rangeStart) {
+            newRange = true;
+            break;
+        }
+        HistoryState.total += 1;
+        RangeState.addCount();
+        DOM.fragment.appendChild(
+            createDOMItem(item, item.lastVisitTime, rangeStart)
+        );
+        i += 1;
+    }
+    var DOMRange = createDOMRange(rangeStart);
+    DOMRange.appendChild(DOM.fragment);
+    DOM.container.appendChild(DOMRange);
+
+    if (newRange) {
+        Visited.reset();
+        HistoryState.lastDOMRangeIsFull = true;
+        HistoryState.itemsCreated += i;
+        HistoryState.lastId = "";
+
+        RangeState.from(item.lastVisitTime)
+        SearchOptions.endTime = RangeState.getLastEnd();
+
+        if(MAX_SEARCH_RESULTS - i <= MIN_SEARCH_RESULTS) {
+            SearchOptions.maxResults = MIN_SEARCH_RESULTS;
+        } else {
+            SearchOptions.maxResults = MAX_SEARCH_RESULTS;
+        }
+        return chrome.history.search(SearchOptions, searchToDOM);
+    } else {
+        HistoryState.lastId = item.id;
+        SearchOptions.endTime = item.lastVisitTime;
+        DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "0");
+    }
+}
+
+async function searchToDOM(hitems) {
+    var rangeStart = RangeState.getLastStart();
+    var rangeEnd = RangeState.getLastEnd();
+    var DOMRange;
+
+    if (hitems.length < 1 || (hitems.length === 1 && hitems[0].id === HistoryState.lastId)) {
+        HistoryState.noMoreContent = true;
+        SearchOptions.maxResults = MAX_SEARCH_RESULTS;
+        if (DOM.fragment.children.length > 0) {
+            if (HistoryState.lastDOMRangeIsFull) {
+                DOMRange = createDOMRange(rangeStart);
+                DOMRange.appendChild(DOM.fragment);
+                DOM.container?.appendChild(DOMRange);
+            } else {
+                DOM.container.lastElementChild.appendChild(DOM.fragment);
+            }
+        }
+        HistoryState.lastDOMRangeIsFull = false;
+        DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "0");
+        return;
+    }
+    var newRange = false;
+    var itemVisitTime = 0;
+    var item;
+    var count = 0;
+    var i = 0;
+    if (hitems[0].id === HistoryState.lastId) {
+        i = 1;
+    }
+    while (i < hitems.length) {
+        item = hitems[i];
+        if (
+            (item.visitCount !== undefined && item.visitCount > 1)
+            || (item.typedCount !== undefined && item.typedCount > 0)
+        ) {
+            if (Visited.has(item.id)) {
+                i += 1;
+                continue;
+            } else {
+                if (SearchOptions.endTime < item.lastVisitTime) {
+                    var visits;
+                    UrlDetails.url = item.url;
+                    try {
+                        visits = await chrome.history.getVisits(UrlDetails);
+                    } catch (e) {
+                        throw new Error(e.message);
+                    }
+                    itemVisitTime = Visited.getClosestVisit(visits, rangeEnd);
+                    if (itemVisitTime === 0) {
+                        i += 1;
+                        continue;
+                    }
+                } else {
+                    itemVisitTime = item.lastVisitTime;
+                }
+                Visited.add(item.id);
+            }
+        } else {
+            itemVisitTime = item.lastVisitTime;
+        }
+        if (itemVisitTime < rangeStart) {
+            newRange = true;
+            break;
+        }
+        HistoryState.total += 1;
+        RangeState.addCount();
+
+        DOM.fragment.appendChild(
+            createDOMItem(item, itemVisitTime, rangeStart)
+        );
+        count += 1;
+        i += 1;
+    }
+    HistoryState.itemsCreated += count;
+    if (newRange) {
+        Visited.reset();
+        RangeState.from(itemVisitTime)
+        SearchOptions.endTime = RangeState.getLastEnd();
+        HistoryState.lastId = "";
+    } else {
+        HistoryState.lastId = item.id;
+        SearchOptions.endTime = itemVisitTime;
+    }
+    if (HistoryState.itemsCreated < MAX_SEARCH_RESULTS) {
+        if (MAX_SEARCH_RESULTS - HistoryState.itemsCreated <= MIN_SEARCH_RESULTS) {
+            SearchOptions.maxResults = MIN_SEARCH_RESULTS;
+        } else {
+            SearchOptions.maxResults = MAX_SEARCH_RESULTS;
+        }
+        if (newRange) {
+            if(DOM.fragment.children.length > 0) {
+                if (HistoryState.lastDOMRangeIsFull) {
+                    DOMRange = createDOMRange(rangeStart);
+                    DOMRange.appendChild(DOM.fragment);
+                    DOM.container?.appendChild(DOMRange);
+                } else {
+                    DOM.container?.lastElementChild?.appendChild(DOM.fragment);
+                }
+            }
+            HistoryState.lastDOMRangeIsFull = true;
+        }
+        return chrome.history.search(SearchOptions, searchToDOM);
+    } else {
+        HistoryState.itemsCreated = 0;
+        SearchOptions.maxResults = MAX_SEARCH_RESULTS;
+
+        if (DOM.fragment.children.length > 0) {
+            if (HistoryState.lastDOMRangeIsFull) {
+                DOMRange = createDOMRange(rangeStart);
+                DOMRange.appendChild(DOM.fragment);
+                DOM.container?.appendChild(DOMRange);
+            } else {
+                DOM.container?.lastElementChild?.appendChild(DOM.fragment);
+            }
+        }
+        HistoryState.lastDOMRangeIsFull = newRange;
+
+        DOM.loading?.setAttribute(ATTR_DATA_DISPLAY, "0");
+        DOM.container.onscroll = DOMContainerOnscroll;
+    }
+}
+
+/**
+@type {(hItems: Array<HistoryItem>) => undefined}*/
+function handleSearch(HItems) {
+    searchToDOM(HItems);
+    if (HistoryState.noMoreContent) {
+        DOM.noHistory.setAttribute(ATTR_DATA_DISPLAY, "1");
+        return;
+    } else {
+        DOM.noHistory.setAttribute(ATTR_DATA_DISPLAY, "0");
+    }
+}
+
+/**
+@type {() => undefined}*/
+function searchAfterDelete() {
+    if (HistoryState.noMoreContent) {
+        DOM.noHistory.setAttribute(ATTR_DATA_DISPLAY, "1");
+        return;
+    } else {
+        if (DOM.container.clientHeight === DOM.container.scrollHeight) {
+            DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "1");
+            chrome.history.search(SearchOptions, searchToDOM);
+        }
+    }
+}
 
 /**
 @type {(type: string, DOMDelete: HTMLButtonElement) => undefined}*/
 function DOMDeleteOnclick(type, DOMDelete) {
-    if (type === DOM_ITEM_V) {
-        const url = DOMDelete.getAttribute(DOM_URL_ATTR);
-        const rangeKey = DOMDelete.getAttribute(DOM_RANGE_ATTR);
+    if (type === DATA_TYPE_ITEM) {
+        const url = DOMDelete.getAttribute(ATTR_DATA_URL);
+        const rangeKey = DOMDelete.getAttribute(ATTR_DATA_RANGE);
         if (url === null || rangeKey === null) {
             return;
         }
         const DOMItem = DOMDelete.parentElement.parentElement;
-        DeleteURLOptions.url = url;
-        chrome.history.deleteUrl(DeleteURLOptions,undefined);
+        UrlDetails.url = url;
+        chrome.history.deleteUrl(UrlDetails, undefined);
 
         const rangeIndex = RangeState.getIndex(Number(rangeKey));
         if (rangeIndex < 0) {
@@ -502,13 +700,12 @@ function DOMDeleteOnclick(type, DOMDelete) {
         } else {
             DOMItem.remove();
         }
-
-        ExtensionState.totalItems -= 1;
+        HistoryState.total -= 1;
 
         searchAfterDelete();
 
-    } else if (type === DOM_DATE_V) {
-        const rangeKey = DOMDelete.getAttribute(DOM_RANGE_ATTR);
+    } else if (type === DATA_TYPE_DATE) {
+        const rangeKey = DOMDelete.getAttribute(ATTR_DATA_RANGE);
         if (rangeKey === null) {
             return;
         }
@@ -520,7 +717,7 @@ function DOMDeleteOnclick(type, DOMDelete) {
         let startTime = RangeState.start[rangeIndex];
         let count = RangeState.count[rangeIndex];
 
-        ExtensionState.totalItems -= count;
+        HistoryState.total -= count;
 
         DeleteRangeOptions.endTime = endTime;
         DeleteRangeOptions.startTime = startTime;
@@ -535,70 +732,68 @@ function DOMDeleteOnclick(type, DOMDelete) {
     }
 }
 
-function DOMContainerOnscroll(e) {
-    if (ExtensionState.historyFinished) {
-        return;
-    }
-    const target = e.currentTarget;
-
-    //end of the current scroll
-    if (target.scrollTop >= target.scrollHeight - target.clientHeight - 50) {
-        DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
-        chrome.history.search(SearchOptions, searchToDOM);
-    }
-};
-
 /**
 @type {(DOMInput: HTMLDivElement) => undefined} */
 function DOMInputSearchTimeout(DOMInput) {
-    SearchOptions.text = DOMInput.value;
-    SearchOptions.endTime = Date.now();
-
-    DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
-
-    ExtensionState.reset();
-    RangeState.reset();
-    TimeState.reset();
+    SearchTimeout = undefined;
+    DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "1");
     DOM.container.replaceChildren();
 
-    chrome.history.search(SearchOptions, handleSearch);
-    timeout = undefined;
-};
+    SearchOptions.endTime = Date.now();
+    SearchOptions.text = DOMInput.value;
 
-let timeout = undefined;
+    RangeState.reset();
+    HistoryState.reset();
+    Visited.reset();
+
+    DOM.noHistory.setAttribute(ATTR_DATA_DISPLAY, "0");
+    chrome.history.search(SearchOptions, initSerachToDOM);
+};
 
 /**
 @type {() => undefined} */
 function DOMInputSearchOninput() {
     if (DOM.inputSearch.value.length === 0) {
-        DOM.buttonSearch.setAttribute(DOM_DISPLAY_ATTR, "0");
-        ExtensionState.mode = "d";
+        DOM.buttonSearch.setAttribute(ATTR_DATA_DISPLAY, "0");
+        HistoryState.mode = "d";
     } else {
-        DOM.buttonSearch.setAttribute(DOM_DISPLAY_ATTR, "1");
-        ExtensionState.mode = "s";
+        DOM.buttonSearch.setAttribute(ATTR_DATA_DISPLAY, "1");
+        HistoryState.mode = "s";
     }
-    if (timeout !== undefined) {
-        clearTimeout(timeout);
+    if (SearchTimeout !== undefined) {
+        clearTimeout(SearchTimeout);
     }
-    timeout = setTimeout(DOMInputSearchTimeout, 500, DOM.inputSearch);
-    DOM.loading.setAttribute(DOM_DISPLAY_ATTR, "1");
+    SearchTimeout = setTimeout(DOMInputSearchTimeout, 500, DOM.inputSearch);
+    DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "1");
 };
 
 /**
 @type {(e:MouseEvent) => undefined}*/
 function DOMHeaderButtonsOnclick(e) {
     var target = e.target;
-    var buttonType = target.getAttribute(DOM_BUTTON_ATTR);
-    if (buttonType === DOM_HHISTORY_V) {
-        openLink("chrome://history", false);
-    } else if (buttonType === DOM_HCLEAR_V) {
-        TabOptions.url = "chrome://settings/clearBrowserData";
+    var buttonType = target.getAttribute(ATTR_DATA_BUTTON);
+    if (buttonType === DATA_BUTTON_HISTORY) {
+        openLink("about://history", e.ctrlKey);
+    } else if (buttonType === DATA_BUTTON_CLEAR) {
+        TabOptions.url = "about://settings/clearBrowserData";
         TabOptions.active = true;
         chrome.tabs.create(TabOptions, undefined);
-    } else if (buttonType === DOM_HMORE_V) {
-        DOM.modalConfig?.setAttribute(DOM_DISPLAY_ATTR, "1");
-    } else if (buttonType === DOM_HCLOSE_V) {
+    } else if (buttonType === DATA_BUTTON_MORE) {
+        DOM.modalConfig?.setAttribute(ATTR_DATA_DISPLAY, "1");
+    } else if (buttonType === DATA_BUTTON_CLOSE) {
         window.close();
+    }
+}
+
+/**
+@type {(e: MouseEvent) => undefined} */
+function DOMHeaderButtonsOnauxclick(e) {
+    var target = e.target;
+    var DOMType = target.getAttribute(ATTR_DATA_BUTTON);
+    if (DOMType === DATA_BUTTON_HISTORY) {
+        TabOptions.url = "about://history";
+        TabOptions.active = StorageState.focusTabs;
+        chrome.tabs.create(TabOptions, undefined);
     }
 }
 
@@ -609,13 +804,25 @@ function DOMButtonSearchOnclick() {
     DOMInputSearchOninput();
 }
 
+function DOMContainerOnscroll(e) {
+    if (HistoryState.noMoreContent) {
+        return;
+    }
+    const target = e.currentTarget;
+    //end of the current scroll
+    if (target.scrollTop >= target.scrollHeight - target.clientHeight - 50) {
+        DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "1");
+        DOM.container.onscroll = null;
+        chrome.history.search(SearchOptions, searchToDOM);
+    }
+};
 
 /**
 @type {(e: MouseEvent) => undefined} */
 function DOMContainerOnauxclick(e) {
     var target = e.target;
-    var DOMType = target.getAttribute(DOM_TYPE_ATTR);
-    if (DOMType === DOM_ITEM_V) {
+    var DOMType = target.getAttribute(ATTR_DATA_TYPE);
+    if (DOMType === DATA_TYPE_ITEM) {
         e.preventDefault();
         var href = target.getAttribute("href");
         TabOptions.url = href;
@@ -626,14 +833,14 @@ function DOMContainerOnauxclick(e) {
 
 function DOMContainerOnclick(e) {
     var target = e.target;
-    var classAttr = target.getAttribute(DOM_TYPE_ATTR);
-    if (classAttr === DOM_BREMOVE_V) {
-        const type = target.getAttribute(DOM_PARENT_ATTR);
+    var classAttr = target.getAttribute(ATTR_DATA_TYPE);
+    if (classAttr === DATA_TYPE_BREMOVE) {
+        const type = target.getAttribute(ATTR_DATA_SET);
         DOMDeleteOnclick(type, target);
         e.preventDefault();
         return;
     }
-    if (classAttr === DOM_ITEM_V) {
+    if (classAttr === DATA_TYPE_ITEM) {
         if (!e.shiftKey) {
             const url = target.href;
             openLink(url, e.ctrlKey);
@@ -642,14 +849,24 @@ function DOMContainerOnclick(e) {
     }
 };
 
-function DOMModalConfigOnclick(e) {
+function DOMContainerOnkeydown(e) {
     var target = e.target;
-    var domType = target.getAttribute(DOM_TYPE_ATTR);
-    if (domType == DOM_MODAL_V || domType === DOM_BREMOVE_V) {
-        DOM.modalConfig?.setAttribute("data-display", "0");
+    var type = target.getAttribute(ATTR_DATA_TYPE);
+    if (type === DATA_TYPE_ITEM) {
+        if (e.code === "KeyQ") {
+            var DOMDelete = target.lastElementChild.firstElementChild;
+            DOMDeleteOnclick(type, DOMDelete);
+        }
     }
 }
 
+function DOMModalConfigOnclick(e) {
+    var target = e.target;
+    var domType = target.getAttribute(ATTR_DATA_TYPE);
+    if (domType == DATA_TYPE_MODAL || domType === DATA_TYPE_BREMOVE) {
+        DOM.modalConfig?.setAttribute("data-display", "0");
+    }
+}
 
 function DOMModalConfigThemeOnchange(e) {
     var target = e.currentTarget;
@@ -668,13 +885,6 @@ function DOMModalConfigFocusOnchange(e) {
     var target = e.currentTarget;
     StorageState.focusTabs = target.checked;
     chrome.storage.local.set(StorageState, undefined);
-}
-
-/**
-@type {(result: Array<Tab>) => undefined} */
-function futureMain(result) {
-    CurrentTab = result[0];
-    chrome.history.search(SearchOptions, handleSearch);
 }
 
 /**
@@ -734,6 +944,7 @@ function main() {
     }
 
     DOM.headerButtons.onclick = DOMHeaderButtonsOnclick;
+    DOM.headerButtons.onauxclick = DOMHeaderButtonsOnauxclick;
 
     DOM.inputSearch.oninput = DOMInputSearchOninput;
     DOM.buttonSearch.onclick = DOMButtonSearchOnclick;
@@ -741,16 +952,23 @@ function main() {
     DOM.container.onscroll = DOMContainerOnscroll;
     DOM.container.onclick = DOMContainerOnclick;
     DOM.container.onauxclick = DOMContainerOnauxclick;
+    DOM.container.onkeydown = DOMContainerOnkeydown;
 
     DOM.modalConfig.onclick = DOMModalConfigOnclick;
     DOM.modalConfigTheme.onchange = DOMModalConfigThemeOnchange;
     DOM.modalConfigOpen.onchange = DOMModalConfigOpenOnchange;
     DOM.modalConfigFocus.onchange = DOMModalConfigFocusOnchange;
 
+    SearchOptions.endTime = Date.now();
+
     chrome.storage.local.get(undefined, getStorage);
     chrome.tabs.query(
         {active: true, currentWindow: true},
-        futureMain
+        function (result) {
+            CurrentTab = result[0];
+            chrome.history.search(SearchOptions, initSerachToDOM);
+        }
     );
 }
+
 window.addEventListener("DOMContentLoaded", main);

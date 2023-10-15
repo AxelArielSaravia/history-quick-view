@@ -9,6 +9,8 @@
     --item-padding: 0 8px;
 
     font-size: 10px;
+
+    background: #000;
 }
 
 :root.dark {
@@ -34,8 +36,9 @@
 }
 
 body {
-    position:relative;
+    position: relative;
     width: 380px;
+    min-height: 340px;
     margin: 0;
     padding: 0;
     font-family: var(--font);
@@ -57,7 +60,7 @@ button,select {
 
 button {
     position: relative;
-    display:flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     border: none;
@@ -76,14 +79,14 @@ button:not(:hover) {
 
 .c_center-children {
     display: flex;
-    align-items:center;
-    justify-content:center;
+    align-items: center;
+    justify-content: center;
 }
 
 .c_space-between-children {
     display: flex;
-    align-items:center;
-    justify-content:space-between;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .c_shell::after {
@@ -101,7 +104,7 @@ button:not(:hover) {
 }
 
 .header .left {
-    display:flex;
+    display: flex;
     align-items: center;
 }
 
@@ -191,7 +194,7 @@ button:not(:hover) {
 }
 .content .container::-webkit-scrollbar-thumb {
     /* color of the scroll thumb */
-    background-color:var(--color-hover);
+    background-color: var(--color-hover);
 }
 
 .content .button:hover {
@@ -214,7 +217,7 @@ button:not(:hover) {
 
 /* date and item */
 :is(.date,.item) {
-    display:flex;
+    display: flex;
     align-items: center;
     height: var(--item-height);
     padding: var(--item-padding);
@@ -259,18 +262,8 @@ button:not(:hover) {
     background: var(--color-hover);
 }
 
-:is(.item:hover .time, .item .button:focus~.time) {
+:is(.item:hover .time, .item:not(:hover) .button) {
     display: none;
-}
-
-.item:not(:hover) .button:not(:focus) {
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    white-space: nowrap;
-    width: 1px;
 }
 
 .item .favicon {
@@ -286,8 +279,8 @@ button:not(:hover) {
 }
 
 .item .right {
-    display:flex;
-    align-items:center;
+    display: flex;
+    align-items: center;
     justify-content: flex-end;
     min-width: 60px;
     padding-left: 5px;
@@ -308,7 +301,7 @@ button:not(:hover) {
     position: absolute;
     height: 100%;
     width: 100%;
-    z-index:3;
+    z-index: 3;
     inset: 0;
     align-items: center;
     justify-content: center;
