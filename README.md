@@ -1,9 +1,10 @@
-### ![History Quick View](./media/promotion/marquee.png)
+### ![History Quick View](./media/promotion/marquee.png) v0.2.0
 created by Axel Ariel Saravia
 
 ---
 
-[*History quick view*](https://chrome.google.com/webstore/detail/history-quick-view/ednfjcijimijfccmlfbeejidmbekdmic?hl=en) is a simple chrome extensions for use and manage simple tasks with your browser history data.
+[*History quick view*](https://chromewebstore.google.com/detail/history-quick-view/ednfjcijimijfccmlfbeejidmbekdmic)
+is a simple chrome extensions for use and manage simple tasks with your browser history data.
 
 This extension is created for my own necessities. If you have some bugs or you need other utilities please contact me.
 

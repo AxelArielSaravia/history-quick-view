@@ -42,9 +42,8 @@ const DeleteRangeOptions = {
     endTime:0,
     startTime: 0
 };
-/**
-@type {QueryDetails} */
-const SearchOptions = {
+
+const Searchptions = {
     text:       "",
     maxResults: MAX_SEARCH_RESULTS,
     startTime:  0,  //ms
@@ -183,7 +182,10 @@ const Visited = {
         Visited.ids.length = 0;
     },
     /**
-    @type {(visits: Array<VisitItem>, rangeEnd: number) => number} */
+    @type {(
+        visits: Array<ChromeExtensionAPI.VisitItem>,
+        rangeEnd: number
+    ) => number} */
     getClosestVisit(visits, rangeEnd) {
         var s;
         if (visits.length < 6) {
@@ -354,7 +356,7 @@ function panic(message) {
 }
 
 /**
-@type {(items: StorageState) => undefined} */
+@type {(items: typeof StorageState) => undefined} */
 function getStorage(items) {
     var open = items.open;
     var focusTabs = items.focusTabs;
@@ -467,7 +469,7 @@ function createDOMItem(hitem, visitTime, startTime) {
     return DOMItem;
 }
 
-function initSerachToDOM(hitems) {
+function initSearchToDOM(hitems) {
     if (hitems.length < 1 || (hitems.length === 1 && hitems[0].id === HistoryState.lastId)) {
         HistoryState.noMoreContent = true;
         DOM.loading.setAttribute(ATTR_DATA_DISPLAY, "0");
@@ -747,7 +749,7 @@ function DOMInputSearchTimeout(DOMInput) {
     Visited.reset();
 
     DOM.noHistory.setAttribute(ATTR_DATA_DISPLAY, "0");
-    chrome.history.search(SearchOptions, initSerachToDOM);
+    chrome.history.search(SearchOptions, initSearchToDOM);
 };
 
 /**
@@ -966,7 +968,7 @@ function main() {
         {active: true, currentWindow: true},
         function (result) {
             CurrentTab = result[0];
-            chrome.history.search(SearchOptions, initSerachToDOM);
+            chrome.history.search(SearchOptions, initSearchToDOM);
         }
     );
 }
