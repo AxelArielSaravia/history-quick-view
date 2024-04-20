@@ -1,4 +1,6 @@
-### ![History Quick View](./media/promotion/marquee.png) v0.2.0
+### ![History Quick View](./media/promotion/marquee.png)
+v0.2.0
+
 created by Axel Ariel Saravia
 
 ---
