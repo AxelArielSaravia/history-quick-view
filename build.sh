@@ -1,5 +1,3 @@
-#! /bin/bash
-
 #This Build use:
 # Bun.js to bundle and minify javascript (https://bun.sh/)
 # tdewolff/minify to minify html, css and json (https://github.com/tdewolff/minify)
@@ -12,7 +10,7 @@ if [[ ! -d "./extension/images" ]]; then
     cp -dr ./src/images ./extension
 fi
 
-bun build ./src/main.js --outdir ./extension --minify-whitespace --minify-syntax
+bun build ./src/main.js --outdir ./extension --minify-whitespace
 if [[ $? == 0 ]]; then
     echo JS build and minify
 fi

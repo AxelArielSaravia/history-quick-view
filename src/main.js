@@ -1,6 +1,8 @@
 "use strict";
 //@ts-check
 
+const VERSION = "0.3.1";
+
 const SECOND = 1000 * 60;
 const DAY = 1000 * 60 * 60 * 24;
 
@@ -266,21 +268,21 @@ function initStorage(items) {
     let focusTabs = items.focusTabs;
     let theme = items.theme
     let set = false;
-    if (open === undefined) {
-        set = true;
-    } else {
+    if (open === STORAGE_OPEN_NEW || open === STORAGE_OPEN_CURRENT) {
         storage.open = open;
-    }
-    if (focusTabs === undefined) {
-        set = true;
     } else {
+        set = true;
+    }
+    if (focusTabs !== undefined) {
         storage.focusTabs = focusTabs;
         TabsProperties.active = focusTabs;
-    }
-    if (theme === undefined) {
-        set = true;
     } else {
+        set = true;
+    }
+    if (theme === STORAGE_THEME_DARK || theme === STORAGE_THEME_LIGHT) {
         storage.theme = theme;
+    } else {
+        set = true;
     }
     if (set) {
         chrome.storage.local.set(storage, undefined);
