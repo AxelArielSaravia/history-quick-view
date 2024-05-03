@@ -1,0 +1,10 @@
+{
+    "name": "history_quick_view",
+    "version": "0.2.0",
+    "author": "axarisar",
+    "license": "MIT",
+    "description": "",
+    "devDependencies": {
+        "chrome-types": "^0.1.281"
+    }
+}

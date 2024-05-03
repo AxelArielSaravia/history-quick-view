@@ -1,16 +1,97 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
+<!doctype html>
+<html lang="en" class="d">
 <head>
-    <meta charset="utf-8">
-    <title>History</title>
-    <script src="/main.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History quick view</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="/main.js" defer></script>
+    <template id="template_rangesearch">
+        <section class="range" data-starttime="">
+            <div class="date" data-type="date">
+                <h2 class="title" name="title"></h2>
+            </div>
+        </section>
+    </template>
+    <template id="template_range">
+        <section class="range" data-starttime="">
+            <div class="date" data-type="date">
+                <h2 class="title" name="title"></h2>
+                <button
+                    data-type="remove"
+                    data-for="date"
+                    title=""
+                    type="button"
+                    class="shell"
+                    name="remove"
+                >
+                    <svg
+                        class="icon icon-x"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </section>
+    </template>
+    <template id="template_item">
+        <a
+            data-type="item"
+            class="item shell"
+            href=""
+            title=""
+            target="_blank"
+            rel="noopener noreferrer"
+            data-id=""
+        >
+            <img
+                class="favicon"
+                name="img"
+                src=""
+                alt="favicon"
+                width="16"
+                height="16"
+            >
+            <p class="title" name="title"></p>
+            <p class="time" name="time"></p>
+            <button
+                data-type="remove"
+                data-for="item"
+                title="remove"
+                name="remove"
+                class="shell"
+                type="button"
+            >
+                <svg
+                    class="icon icon-x"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </a>
+    </template>
 </head>
 <body>
-    <header class="header c_space-between-children">
+    <header class="root">
         <div class="left">
-            <h1 class="title c_bold">History Quick View</h1>
-            <div id="loading" class="loading c_center_children">
+            <h1>History Quick View</h1>
+            <div id="h_loading" class="loading">
                 <svg
                     class="icon icon-loader"
                     xmlns="http://www.w3.org/2000/svg"
@@ -32,12 +113,12 @@
                 </svg>
             </div>
         </div>
-        <div id="header_buttons" class="right">
+        <nav id="h_buttons" class="right">
             <button
-                data-button="0"
-                class="button c_shell"
+                name="history"
+                title="Go to history"
                 type="button"
-                title="Go to History"
+                class="shell"
             >
                 <svg
                     class="icon icon-history"
@@ -55,10 +136,10 @@
                 </svg>
             </button>
             <button
-                data-button="1"
-                class="button c_shell"
-                type="button"
+                name="clear"
                 title="Clear browsing history"
+                type="button"
+                class="shell"
             >
                 <svg
                     class="icon icon-trash"
@@ -77,10 +158,10 @@
                 </svg>
             </button>
             <button
-                data-button="2"
-                class="button c_shell"
+                name="more"
+                tutle="More"
                 type="button"
-                title="More"
+                class="shell"
             >
                 <svg
                     class="icon icon-more"
@@ -98,10 +179,10 @@
                 </svg>
             </button>
             <button
-                data-button="3"
-                class="button c_shell"
-                type="button"
+                name="close"
                 title="Close"
+                type="button"
+                class="shell"
             >
                 <svg
                     class="icon icon-x"
@@ -117,9 +198,13 @@
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
-        </div>
+        </nav>
     </header>
-    <div class="search">
+    <form
+        role="search"
+        name="search"
+        aria-label="on browsing history"
+    >
         <svg
             class="icon icon-search"
             xmlns="http://www.w3.org/2000/svg"
@@ -134,16 +219,15 @@
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
         <input
-            id="input_search"
             name="text"
             type="text"
             placeholder="Search history"
         />
         <button
-            id="button_search"
-            class="button"
+            name="remove"
+            class="shell"
             type="button"
-            data-display="0"
+            data-css-hidden
         >
             <svg
                 class="icon icon-x"
@@ -159,23 +243,18 @@
                 <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
         </button>
-    </div>
-    <main class="content">
-        <p id="no-history" class="no-history" data-display="0">
+    </form>
+    <main class="root">
+        <p id="m_empty" class="empty" data-css-hidden>
             No History
         </p>
-        <div id="container" class="container"></div>
+        <div id="m_container" class="container"></div>
     </main>
-    <div id="modal_config" class="modal" data-display="0" data-type="3">
+    <div id="modal" data-type="modal" class="root modal" data-css-hidden>
         <section class="config">
-            <h2 class="c_space-between-children">
-                Configuration
-                <button
-                    class="close c_align-center c_shell"
-                    data-type="2"
-                    title="close"
-                    type="button"
-                >
+            <header>
+                <h2>Configuration</h2>
+                <button class="shell" data-type="close" type="button">
                     <svg
                         class="icon icon-x"
                         xmlns="http://www.w3.org/2000/svg"
@@ -190,34 +269,34 @@
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
-            </h2>
-            <div class="field focus-tabs c_space-between-children">
-                <p>Theme:</p>
-                <select id="modal_config-theme" name="theme">
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                </select>
-            </div>
-            <div class="field c_space-between-children">
-                <p title="Set if the url opens in the current tab or in a new tab">
-                    The links will open at:
-                </p>
-                <select id="modal_config-open" name="openLinks">
-                    <option value="0">Current Tab</option>
-                    <option value="1">New Tab</option>
-                </select>
-            </div>
-            <div class="field c_space-between-children">
-                <p title="When a new tab is opens, go to it (focus it) or stay in your current tab">
-                    Focus opened tabs:
-                </p>
-                <input id="modal_config-focus" name="focus" type="checkbox">
-            </div>
-            <hr/>
-            <div class="socials c_space-between-children">
-                <p>created by&#160;<strong>Axel Ariel Saravia</strong></p>
+            </header>
+            <form name="config">
+                <div class="field">
+                    <p>Theme:</p>
+                    <select name="theme">
+                        <option value="d">Dark</option>
+                        <option value="l">Light</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <p
+                        title="Set if the url opens in the curren or in a new tab"
+                    >Open links at:</p>
+                    <select name="open_behavior">
+                        <option value="c">Current Tab</option>
+                        <option value="n">New Tab</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <p title="When a new tab is opens, go to it (focus it) or stay in your current tab">
+                        Focus opened tabs:
+                    </p>
+                    <input name="focus" type="checkbox">
+                </div>
+            </form>
+            <footer class="socials">
+                <p>created by <strong>Axel Ariel Saravia</strong></p>
                 <a
-                    class="c_center-children"
                     href="https://github.com/AxelArielSaravia/history-quick-view"
                     target="_blank"
                     rel="noreferrer noopener"
@@ -236,64 +315,8 @@
                         <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
                     </svg>
                 </a>
-            </div>
+            </footer>
         </section>
     </div>
-    <template id="template_range">
-        <div class="range" data-range="">
-            <div class="date" data-type="1">
-                <h2 class="title"></h2>
-                <button
-                    class="button c_shell"
-                    data-type="2"
-                    data-set="1"
-                    data-range=""
-                    data-display="1"
-                    type="button"
-                    title=""
-                ></button>
-            </div>
-        </div>
-    </template>
-    <template id="template_item">
-        <a
-            class="item c_shell"
-            data-type="0"
-            href=""
-            target="_blank"
-            title=""
-            rel="noopener noreferrer"
-        >
-            <img class="favicon" src="" alt="favicon" width="16" height="16"/>
-            <p class="title"></p>
-            <div class="right">
-                <button
-                    class="button c_shell"
-                    data-type="2"
-                    data-set="0"
-                    data-url=""
-                    data-range=""
-                    type="button"
-                    title="Remove"
-                ></button>
-                <p class="time"></p>
-            </div>
-        </a>
-    </template>
-    <template id="template_icon-delete">
-        <svg
-            class="icon icon-x"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-        >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-    </template>
 </body>
 </html>

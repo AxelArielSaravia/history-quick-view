@@ -12,7 +12,7 @@ if [[ ! -d "./extension/images" ]]; then
     cp -dr ./src/images ./extension
 fi
 
-bun build ./src/main.js --outdir ./extension --minify
+bun build ./src/main.js --outdir ./extension --minify-whitespace --minify-syntax
 if [[ $? == 0 ]]; then
     echo JS build and minify
 fi
