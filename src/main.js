@@ -1,7 +1,7 @@
 "use strict";
 //@ts-check
 
-const VERSION = "0.3.1";
+const VERSION = "0.3.2";
 
 const SECOND = 1000 * 60;
 const DAY = 1000 * 60 * 60 * 24;
@@ -44,7 +44,6 @@ const storage = {
     open: STORAGE_OPEN_CURRENT,
     theme: STORAGE_THEME_DARK
 };
-let storageChange = false;
 
 //Global Variables
 
@@ -57,6 +56,9 @@ let noMoreContent = false;
 let visited = [];
 let lastRangeIsFull = false;
 let lastItemId = "";
+let relatedFocusTarget = null;
+let modalopen = false;
+let searchfocus = false;
 
 const TimeRange = {
     //DATA
@@ -172,7 +174,6 @@ const TimeRange = {
 };
 
 //DOM Constants
-
 const DOMFragment = document.createDocumentFragment();
 const DOMTemplateRangeSearch = document.getElementById("template_rangesearch");
 if (DOMTemplateRangeSearch === null) {
@@ -206,14 +207,24 @@ const DOMMainContainer = document.getElementById("m_container");
 if (DOMMainContainer === null) {
     throw Error("ERROR: #m_container does not exist");
 }
-const DOMModal = document.getElementById("modal");
-if (DOMModal === null) {
-    throw Error("ERROR: #modal does not exist");
+const DOMModalMore = document.getElementById("modal_more");
+if (DOMModalMore === null) {
+    throw Error("ERROR: #modal_config does not exist");
 }
-const DOMFormConfig = document.forms.namedItem("config");
-if (DOMFormConfig === null) {
+const DOMFormMore = document.forms.namedItem("more");
+if (DOMFormMore === null) {
     throw Error("ERRORP: forms.config does not exist")
 }
+const DOMModalCommand = document.getElementById("modal_command");
+if (DOMModalCommand === null) {
+    throw Error("ERROR: #modal_command does not exist");
+}
+
+function focusRelatedTarget() {
+    relatedFocusTarget?.focus();
+    relatedFocusTarget = null;
+}
+
 /**@type{(
     visits: Array<chrome.history.VisitItem>,
     rangeEnd: number
@@ -509,9 +520,9 @@ async function searchToDOM(historyItems) {
  * @type {(s: typeof storage) => undefined}*/
 function initDOM(s) {
     document.firstElementChild.setAttribute("class", s.theme);
-    DOMFormConfig["theme"].value = s.theme;
-    DOMFormConfig["open_behavior"].value = s.open;
-    DOMFormConfig["focus"].checked = s.focusTabs;
+    DOMFormMore["theme"].value = s.theme;
+    DOMFormMore["open"].value = s.open;
+    DOMFormMore["focus"].checked = s.focusTabs;
 }
 
 /**
@@ -530,7 +541,7 @@ function openLink(tabsProperties, open, ctrl) {
 
 /**
  * @type {(DOMItem: HTMLAnchorElement, startTime: number) => undefined}*/
-function deleteLink(DOMItem, startTime) {
+function removeLink(DOMItem, startTime) {
     const url = DOMItem.getAttribute("href");
     UrlDetails.url = url;
 
@@ -557,6 +568,28 @@ function deleteLink(DOMItem, startTime) {
     totalItems -= 1;
 }
 
+/**
+ * @type {(DOMRange: HTMLElement, startTime: number) => undefined}*/
+function removeRange(DOMRange, startTime) {
+    const i = TimeRange.getStartIndex(startTime);
+    if (i < 0) {
+        console.error("ERROR: start time does not found");
+        return;
+    }
+
+    DeleteRange.startTime = TimeRange.starts[i];
+    DeleteRange.endTime = TimeRange.ends[i];
+    let elements = TimeRange.elements[i];
+
+    //throws
+    chrome.history.deleteRange(DeleteRange);
+
+    TimeRange.remove(i);
+    totalItems -= elements;
+
+    DOMRange.remove();
+}
+
 function searchAgain() {
     if (noMoreContent) {
         if (totalItems < 1) {
@@ -568,6 +601,48 @@ function searchAgain() {
         DOMHeaderLoading.setAttribute("data-css-hidden", "");
         chrome.history.search(SearchQuery, searchToDOM);
         DOMMainContainer.onscroll = null;
+    }
+}
+
+function openModalMore() {
+    DOMModalMore.removeAttribute("data-css-hidden");
+    DOMFormMore["theme"].focus();
+}
+
+function openModalCommand() {
+    DOMModalCommand.removeAttribute("data-css-hidden");
+    DOMModalCommand
+        .firstElementChild
+        .firstElementChild
+        .lastElementChild
+        .focus();
+}
+
+function closeModal(DOMModal) {
+    DOMModal?.setAttribute("data-css-hidden", "");
+    focusRelatedTarget();
+    modalopen = false;
+}
+
+/**
+ * @type {(e: KeyboardEvent) => undefined}*/
+function DOMOnkeyup (e) {
+    if (!DOMModalMore.hasAttribute("data-css-hidden")) {
+        if (e.key === "q" || e.key === "m") {
+            closeModal(DOMModalMore);
+        }
+    } else if (!DOMModalCommand.hasAttribute("data-css-hidden")) {
+        if (e.key === "q" || e.key === "c") {
+            closeModal(DOMModalCommand);
+        }
+    } else {
+        if (e.key === "s" && !e.ctrlKey) {
+            DOMFormSearch["text"].focus();
+        } else if (e.key === "c" && !searchfocus) {
+            openModalCommand();
+        } else if (e.key === "m" && !searchfocus) {
+            openModalMore();
+        }
     }
 }
 
@@ -588,7 +663,10 @@ function DOMHeaderButtonsOnclick(e) {
         TabsProperties.active = temp;
 
     } else if (name === "more") {
-        DOMModal.removeAttribute("data-css-hidden");
+        openModalMore();
+
+    } else if (name === "command") {
+        openModalCommand();
 
     } else if (name === "close") {
         window.close();
@@ -683,28 +761,12 @@ function DOMMainContainerOnclick(e) {
             return;
         }
         if (datafor === "item") {
-            deleteLink(DOMParent, Number(startTime));
-
+            removeLink(DOMParent, Number(startTime));
+            searchAgain();
         } else if (datafor === "date") {
-            const i = TimeRange.getStartIndex(Number(startTime));
-            if (i < 0) {
-                console.error("ERROR: start time does not found");
-                return;
-            }
-
-            DeleteRange.startTime = TimeRange.starts[i];
-            DeleteRange.endTime = TimeRange.ends[i];
-            let elements = TimeRange.elements[i];
-
-            //throws
-            chrome.history.deleteRange(DeleteRange);
-
-            TimeRange.remove(i);
-            totalItems -= elements;
-
-            DOMRange.remove();
+            removeRange(DOMRange, Number(startTime));
+            searchAgain();
         }
-        searchAgain();
 
     } else if (type === "item") {
         if (!e.shiftKey) {
@@ -736,20 +798,28 @@ function DOMMainContainerOnauxclick(e) {
 
 /**
  * @type {(e: KeyboardEvent) => undefined}*/
-function DOMMainContainerOnkeydown(e) {
+function DOMMainContainerOnkeyup(e) {
     let target = e.target;
     let type = target.getAttribute("data-type");
-    if (type !== "item") {
-        return;
-    }
-    if (e.key === "q") {
-        const DOMRange = target.parentElement;
-        const startTime = DOMRange?.getAttribute("data-starttime");
-        if (startTime === null || startTime === undefined) {
-            console.error('ERROR: .range does not have "data-startitme" attribute');
-        } else {
-            deleteLink(target, Number(startTime));
-            searchAgain();
+    if (type === "item") {
+        if (e.key === "r") {
+            const DOMRange = target.parentElement;
+            const startTime = DOMRange?.getAttribute("data-starttime");
+            if (startTime === null || startTime === undefined) {
+                console.error('ERROR: .range does not have "data-startitme" attribute');
+            } else {
+                removeLink(target, Number(startTime));
+                searchAgain();
+            }
+        } else if (e.key === "w" && !searchMode) {
+            const DOMRange = target.parentElement;
+            const startTime = DOMRange?.getAttribute("data-starttime");
+            if (startTime === null || startTime === undefined) {
+                console.error('ERROR: .range does not have "data-startitme" attribute');
+            } else {
+                removeRange(DOMRange, Number(startTime));
+                searchAgain();
+            }
         }
     }
 }
@@ -758,15 +828,15 @@ function DOMMainContainerOnkeydown(e) {
  * @type {(e: MouseEvent) => undefined}*/
 function DOMModalOnclick(e) {
     let target = e.target;
-    let type = target.getAttribute("data-type");
-    if (type === "modal" || type === "close") {
-        DOMModal?.setAttribute("data-css-hidden", "");
+    if (target?.getAttribute("data-action") === "close") {
+        closeModal(e.currentTarget);
     }
 }
 
-function DOMFormConfigOnchange(e) {
+function DOMFormMoreOnchange(e) {
     let target = e.target;
     let name = target.getAttribute("name");
+    let storageChange = false;
     if (name === "theme") {
         if (
             target.value === STORAGE_THEME_DARK
@@ -776,9 +846,15 @@ function DOMFormConfigOnchange(e) {
             document.firstElementChild.setAttribute("class", target.value);
             storageChange = true;
         } else {
-            console.error("ERROR: the theme value is wrong");
+            target.value = STORAGE_THEME_DARK;
+            document.firstElementChild.setAttribute("class", STORAGE_THEME_DARK);
+            if (storage.theme !== STORAGE_THEME_DARK) {
+                storage.theme = STORAGE_THEME_DARK;
+                storageChange = true;
+            }
+            console.error("WARNNING: the theme value was wrong, it will set the default");
         }
-    } else if (name === "open_behavior") {
+    } else if (name === "open") {
         if (
             target.value === STORAGE_OPEN_NEW
             || target.value === STORAGE_OPEN_CURRENT
@@ -786,7 +862,12 @@ function DOMFormConfigOnchange(e) {
             storage.open = target.value;
             storageChange = true;
         } else {
-            console.error("ERROR: the open_behavior value is wrong");
+            target.value = STORAGE_OPEN_CURRENT;
+            if (storage.open !== STORAGE_OPEN_CURRENT) {
+                storage.open = STORAGE_OPEN_CURRENT;
+                storageChange = true;
+            }
+            console.error("WARNNING: the open value was wrong, it will set the default");
         }
     } else if (name === "focus") {
         storage.focusTabs = target.checked;
@@ -798,8 +879,7 @@ function DOMFormConfigOnchange(e) {
     }
 }
 
-//MAIN
-{
+(function main() {
     chrome.storage.local.get(
         undefined,
         /**@type{(items: typeof storage) => undefined}*/
@@ -809,21 +889,79 @@ function DOMFormConfigOnchange(e) {
             SearchQuery.endTime = Date.now();
             //throws
             chrome.history.search(SearchQuery, searchToDOM);
+
+            document.addEventListener("keyup", DOMOnkeyup, true);
+
+            DOMHeaderButtons.addEventListener("click", DOMHeaderButtonsOnclick, false);
+            DOMHeaderButtons.addEventListener("auxclick", DOMHeaderButtonsOnauxclick, false);
+
+            DOMFormSearch["text"].addEventListener("input", DOMFormSearchOninput, false);
+            DOMFormSearch["remove"].addEventListener("click", DOMFormSearchOnclick, false);
+
+            DOMFormSearch["text"].addEventListener(
+                "focus",
+                function (e) {
+                    relatedFocusTarget = e.relatedTarget;
+                    searchfocus = true;
+                },
+                false
+            );
+            DOMFormSearch["text"].addEventListener(
+                "focusout",
+                function () {
+                    searchfocus = false;
+                },
+                false
+            );
+            DOMFormSearch.addEventListener("keydown", function (e) {
+                if (e.ctrlKey && e.key === "s") {
+                    e.preventDefault();
+                    focusRelatedTarget();
+                }
+            });
+
+            DOMMainContainer.onscroll = DOMMainContainerOnscroll;
+            DOMMainContainer.addEventListener("click", DOMMainContainerOnclick, false);
+            DOMMainContainer.addEventListener("auxclick", DOMMainContainerOnauxclick, false);
+            DOMMainContainer.addEventListener("keyup", DOMMainContainerOnkeyup, false);
+
+            DOMModalMore.addEventListener("click", DOMModalOnclick, false);
+
+            DOMFormMore.addEventListener("change", DOMFormMoreOnchange, false);
+
+            DOMFormMore["theme"].addEventListener(
+                "focus",
+                function (e) {
+                    if (modalopen) {
+                        return;
+                    }
+                    modalopen = true;
+                    if (e.relatedTarget !== null) {
+                        relatedFocusTarget = e.relatedTarget;
+                    } else {
+                        relatedFocusTarget = DOMHeaderButtons.children["more"];
+                    }
+                },
+                false
+            );
+
+            DOMModalCommand.addEventListener("click", DOMModalOnclick, false);
+            DOMModalCommand.querySelector("button").addEventListener(
+                "focus",
+                function (e) {
+                    if (modalopen) {
+                        return;
+                    }
+                    modalopen = true;
+                    if (e.relatedTarget !== null) {
+                        relatedFocusTarget = e.relatedTarget;
+                    } else {
+                        relatedFocusTarget = DOMHeaderButtons.children["command"];
+                    }
+                },
+                false
+            );
+
         }
     );
-
-    DOMHeaderButtons.addEventListener("click", DOMHeaderButtonsOnclick, false);
-    DOMHeaderButtons.addEventListener("auxclick", DOMHeaderButtonsOnauxclick, false);
-
-    DOMFormSearch["text"].addEventListener("input", DOMFormSearchOninput, false);
-    DOMFormSearch["remove"].addEventListener("click", DOMFormSearchOnclick, false);
-
-    DOMMainContainer.onscroll = DOMMainContainerOnscroll;
-    DOMMainContainer.addEventListener("click", DOMMainContainerOnclick, false);
-    DOMMainContainer.addEventListener("auxclick", DOMMainContainerOnauxclick, false);
-    DOMMainContainer.addEventListener("keydown", DOMMainContainerOnkeydown, false);
-
-    DOMModal.addEventListener("click", DOMModalOnclick, false);
-
-    DOMFormConfig.addEventListener("change", DOMFormConfigOnchange, false);
-}
+})();

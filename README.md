@@ -1,5 +1,5 @@
 ### ![History Quick View](./media/promotion/marquee.png)
-v0.3.1
+v0.3.2
 
 created by Axel Ariel Saravia
 
@@ -27,9 +27,18 @@ This extension is created for my own necessities. If you have some bugs or you n
 
 | Command | Description |
 | --- | ---|
-| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> or <kbd>Ctrl</kbd> + mouse click| Opens the url in a contrary way of the configurations
-| <kbd>Shift</kbd> + <kbd>Enter</kbd> or <kbd>Shift</kbd> + mouse click| Opens the url in a new windows |
-| <kbd>q</kbd> | Delete the url selected |
+| <kbd>Tab</kbd> | Normal navigation |
+| <kbd>m</kbd> | open or close the "more modal" |
+| <kbd>c</kbd> | open or close the "commands modal" |
+| <kbd>q</kbd> | close the "more modal" or the "commands modal" |
+| <kbd>s</kbd> | focus search input |
+| <kbd>Ctrl</kbd> + <kbd>s</kbd> | on search input, return to the previous focus if exits |
+| <kbd>r</kbd> | on item, remove the item |
+| <kbd>w</kbd> | on item, remove the complete day range |
+| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> | on item, opens the item in a contrary way of the configurations |
+| <kbd>Ctrl</kbd> + <kbd>mouse click</kbd> | on item, opens the item in a contrary way of the configurations |
+| <kbd>Shift</kbd> + <kbd>Enter</kbd> | on item, opens the item in a new windows |
+| <kbd>Shift</kbd> + <kbd>mouse click</kbd> | on item, opens the item in a new windows |
 
 ---
 

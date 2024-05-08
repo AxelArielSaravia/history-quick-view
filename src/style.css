@@ -67,7 +67,7 @@ body {
     height: 100%;
 }
 
-:is(h1, h2, p, select) {
+:is(h1, h2, h3, p, select) {
     font-size: var(--font-size);
     margin: 0;
 }
@@ -294,38 +294,46 @@ main.root .item:not(:hover) [name="remove"] {
 
 }
 
-.modal section.config {
+.modal>section {
     position: absolute;
     transform: translateY(40px);
     padding: 10px;
     background: var(--color-bg);
-    width: 80%;
+    width: 90%;
+    max-height: 520px;
+    overflow: auto;
+}
+.modal>section::-webkit-scrollbar {
+    width: 8px;
+}
+.modal>section::-webkit-scrollbar-thumb {
+    background-color: var(--color-hover);
 }
 
-.modal section.config header {
+.modal>section header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding-bottom: 10px;
 }
 
-.modal section.config form {
+.modal form {
     padding-block: 10px;
 }
 
-.modal section.config form .field {
+.modal form .field {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 10px;
 }
 
-.modal section.config form input[type="checkbox"] {
+.modal form input[type="checkbox"] {
     width: 20px;
     height: 20px;
 }
 
-.modal section.config footer {
+.modal footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -333,10 +341,38 @@ main.root .item:not(:hover) [name="remove"] {
     border-top: 1px solid var(--color-hover-l);
 }
 
-.modal section.config a {
+.modal footer a {
     padding: 5px
 }
 
-.modal section.config a:hover {
+.modal footer a:hover {
     background: var(--color-hover);
+}
+
+
+.modal article {
+    padding: 10px 0;
+    display: flex;
+}
+
+.modal article h3 {
+    --font-size: 1.2rem;
+    flex-shrink: 0;
+    line-height: 2;
+}
+
+.modal article p {
+    padding-left: 10px;
+}
+
+.modal hr {
+    margin: 10px 0;
+    border-color: var(--color);
+}
+
+kbd {
+    font-family: monospace;
+    border: 1px solid var(--color);
+    border-radius: 5px;
+    padding: 2px 4px;
 }

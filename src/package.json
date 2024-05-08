@@ -1,10 +1,16 @@
 {
-    "name": "history_quick_view",
-    "version": "0.2.0",
-    "author": "axarisar",
-    "license": "MIT",
-    "description": "",
-    "devDependencies": {
-        "chrome-types": "^0.1.281"
-    }
+  "name": "history_quick_view",
+  "version": "0.3.2",
+  "author": "axarisar",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "chrome-types": "^0.1.281",
+    "@types/bun": "latest"
+  },
+  "module": "index.ts",
+  "type": "module",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
 }
