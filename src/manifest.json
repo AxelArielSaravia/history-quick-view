@@ -1,9 +1,9 @@
 {
     "manifest_version": 3,
-    "version": "0.3.2",
+    "version": "0.3.3",
     "name": "History quick view",
     "description": "View, delete and search browsing history data",
-    "author": "axarsar",
+    "author": "axarisar",
     "action": {
         "default_icon": {
             "16": "images/toolbar16.png",

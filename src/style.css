@@ -9,6 +9,8 @@
     --z-index-high: 3;
 
     --item-height: 35px;
+
+    --border-radius: 5px;
 }
 
 html {
@@ -78,6 +80,7 @@ select {
 
 a {
     color: var(--color);
+    border-radius: var(--border-radius);
 }
 
 :is(button, select, input[type="checkbox"]) {
@@ -93,6 +96,7 @@ button {
     padding: 5px;
     color: var(--color);
     font-family: var(--font);
+    border-radius: var(--border-radius);
 }
 
 button:hover {
@@ -103,35 +107,46 @@ button:not(:hover) {
     background: transparent;
 }
 
+input, select {
+    border-radius: var(--border-radius);
+}
+
+kbd {
+    font-family: monospace;
+    border: 1px solid var(--color);
+    border-radius: var(--border-radius);
+    padding: 2px 4px;
+}
+
 .icon {
     width: var(--icon-size);
 }
 
 
 /*HEADER*/
-header.root {
+.header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px;
 }
 
-header.root .left {
+.header .left {
     display: flex;
     align-items: center;
 }
 
-header.root .right {
+.header .right {
     display: flex;
     align-items: center;
 }
 
-header.root h1 {
+.header h1 {
     font-weight: 600;
     padding: 5px;
 }
 
-header.root .loading {
+.header .loading {
     animation: 2s ease-in-out 0s infinite spin;
 }
 
@@ -157,7 +172,7 @@ form[name="search"] .icon-search {
 
 form[name="search"] input {
     width: 100%;
-    height: var(--item-height);
+    min-height: var(--item-height);
     background: var(--color-bg-d);
 
     padding: 0 35px 0 30px;
@@ -167,6 +182,7 @@ form[name="search"] input {
 
     outline: none;
     border: none;
+    line-height: 2;
 }
 
 form[name="search"] button[name="remove"] {
@@ -176,7 +192,7 @@ form[name="search"] button[name="remove"] {
 }
 
 /*MAIN*/
-main.root {
+.main {
     --padding: 0px 8px;
     --icon-size: 15px;
     --min-height: 230px;
@@ -188,7 +204,7 @@ main.root {
     line-height: 2;
 }
 
-main.root .empty:not([data-css-hidden]) {
+.main .empty:not([data-css-hidden]) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -199,36 +215,35 @@ main.root .empty:not([data-css-hidden]) {
     font-size: 2rem;
 }
 
-main.root .container {
+.main .container {
     overflow: auto;
     max-height: var(--max-height);
     padding-inline: 5px;
 }
 
-main.root .container::-webkit-scrollbar {
+.main .container::-webkit-scrollbar {
     width: 8px;
 }
-
-main.root .container::-webkit-scrollbar-thumb {
+.main .container::-webkit-scrollbar-thumb {
     background-color: var(--color-hover);
 }
 
-main.root :is(.date, .item) [name="remove"] {
+.main :is(.date, .item) [name="remove"] {
     position: absolute;
     top: 5px;
     right: 5px;
     z-index: var(--z-index-mid);
 }
 
-main.root :is(.item, .date):not(:hover) {
+.main :is(.item, .date):not(:hover) {
     background: var(--color-bg);
 }
 
-main.root :is(.item, .date):hover {
+.main :is(.item, .date):hover {
     background: var(--color-hover);
 }
 
-main.root .date {
+.main .date {
     position: sticky;
     top: 0;
     z-index: var(--z-index-high);
@@ -236,9 +251,10 @@ main.root .date {
     align-items: center;
     padding: var(--padding);
     height: var(--item-height);
+    border-radius: var(--border-radius);
 }
 
-main.root .item {
+.main .item {
     position: relative;
     display: flex;
     align-items: center;
@@ -246,17 +262,30 @@ main.root .item {
     padding: var(--padding);
     text-decoration: none;
     outline-offset: -2px;
+    border-radius: var(--border-radius);
+}
+.main .item::before {
+    content: "";
+    position: absolute;
+    width: 30px;
+    height: 70%;
+    right: 60px;
+}
+.main .item:not(:hover)::before {
+    background: linear-gradient(to left, var(--color-bg), transparent);
+}
+.main .item:hover::before {
+    background: linear-gradient(to left, var(--color-hover), transparent);
 }
 
-main.root .item [name="title"] {
+.main .item [name="title"] {
     width: 100%;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     padding-left: 10px;
 }
 
-main.root .item [name="time"] {
+.main .item [name="time"] {
     --font-size: 1.2rem;
     position: relative;
     text-align: right;
@@ -264,11 +293,11 @@ main.root .item [name="time"] {
     opacity: 80%;
 }
 
-main.root .item:hover [name="time"] {
+.main .item:hover [name="time"] {
     visibility: hidden;
 }
 
-main.root .item:not(:hover) [name="remove"] {
+.main .item:not(:hover) [name="remove"] {
     display: none;
 }
 
@@ -276,6 +305,9 @@ main.root .item:not(:hover) [name="remove"] {
     display:flex;
     justify-content: center;
 }
+
+
+/*MODAL*/
 
 .modal {
     position: absolute;
@@ -302,6 +334,7 @@ main.root .item:not(:hover) [name="remove"] {
     width: 90%;
     max-height: 520px;
     overflow: auto;
+    border-radius: var(--border-radius);
 }
 .modal>section::-webkit-scrollbar {
     width: 8px;
@@ -342,7 +375,7 @@ main.root .item:not(:hover) [name="remove"] {
 }
 
 .modal footer a {
-    padding: 5px
+    padding: 5px;
 }
 
 .modal footer a:hover {
@@ -354,7 +387,6 @@ main.root .item:not(:hover) [name="remove"] {
     padding: 10px 0;
     display: flex;
 }
-
 .modal article h3 {
     --font-size: 1.2rem;
     flex-shrink: 0;
@@ -368,11 +400,4 @@ main.root .item:not(:hover) [name="remove"] {
 .modal hr {
     margin: 10px 0;
     border-color: var(--color);
-}
-
-kbd {
-    font-family: monospace;
-    border: 1px solid var(--color);
-    border-radius: 5px;
-    padding: 2px 4px;
 }

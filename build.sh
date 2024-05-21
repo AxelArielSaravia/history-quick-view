@@ -15,7 +15,7 @@ if [[ $? == 0 ]]; then
     echo JS build and minify
 fi
 
-minify -o ./extension/index.html ./src/index.html
+minify --html-keep-end-tags -o ./extension/index.html ./src/index.html
 if [[ $? == 0 ]]; then
     echo index.html minified success
 fi

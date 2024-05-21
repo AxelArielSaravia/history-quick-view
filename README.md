@@ -1,5 +1,5 @@
 ### ![History Quick View](./media/promotion/marquee.png)
-v0.3.2
+v0.3.3
 
 created by Axel Ariel Saravia
 
@@ -28,20 +28,21 @@ This extension is created for my own necessities. If you have some bugs or you n
 | Command | Description |
 | --- | ---|
 | <kbd>Tab</kbd> | Normal navigation |
-| <kbd>m</kbd> | open or close the "more modal" |
-| <kbd>c</kbd> | open or close the "commands modal" |
-| <kbd>q</kbd> | close the "more modal" or the "commands modal" |
 | <kbd>s</kbd> | focus search input |
-| <kbd>Ctrl</kbd> + <kbd>s</kbd> | on search input, return to the previous focus if exits |
+| <kbd>Ctrl</kbd> + <kbd>q</kbd> | on search input, removes the search input text|
 | <kbd>r</kbd> | on item, remove the item |
-| <kbd>w</kbd> | on item, remove the complete day range |
+| <kbd>Shift</kbd> + <kbd>r</kbd> | on item, remove the complete day range |
 | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> | on item, opens the item in a contrary way of the configurations |
 | <kbd>Ctrl</kbd> + <kbd>mouse click</kbd> | on item, opens the item in a contrary way of the configurations |
 | <kbd>Shift</kbd> + <kbd>Enter</kbd> | on item, opens the item in a new windows |
 | <kbd>Shift</kbd> + <kbd>mouse click</kbd> | on item, opens the item in a new windows |
-
+| <kbd>Ctrl</kbd> + <kbd>q</kbd> | close any kind of modal |
+| <kbd>m</kbd> | open or close the "more modal" |
+| <kbd>k</kbd> | open or close the "keyboard modal" |
 ---
 
-The icons used in the extension are from [Feather Icons](https://feathericons.com/).
+The icons used in the extension are from 
+[Feather Icons](https:f//feathericons.com/) and
+[Lucide](https://lucide.dev/).
 
 The inspiration of this extension comes from the [Edge Browser](https://www.microsoft.com/en-us/edge) history extension.
