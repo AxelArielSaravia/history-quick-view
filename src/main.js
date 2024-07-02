@@ -1,7 +1,7 @@
 "use strict";
 //@ts-check
 
-const VERSION = "0.3.3";
+const VERSION = "0.3.4";
 
 const SECOND = 1000 * 60;
 const DAY = 1000 * 60 * 60 * 24;
@@ -23,7 +23,8 @@ const DateFormatter = Intl.DateTimeFormat(undefined, {dateStyle: "full"});
 
 const TabsProperties = {
     active: false,
-    url: ""
+    url: "",
+    index: undefined,
 };
 
 const UrlDetails = {
@@ -399,6 +400,7 @@ const HItem = {
         if ((open === STORAGE_OPEN_NEW) === ctrl) {
             chrome.tabs.update(undefined, tabsProperties, undefined);
         } else {
+            tabsProperties.index += 1;
             chrome.tabs.create(tabsProperties, undefined);
         }
     },
@@ -529,6 +531,7 @@ const HHeader = {
         let name = target.getAttribute("name");
         if (name === "history") {
             TabsProperties.url = "about://history"
+            TabsProperties.index += 1;
             chrome.tabs.create(TabsProperties, undefined);
         }
     },
@@ -536,6 +539,7 @@ const HHeader = {
         let temp = TabsProperties.active
         TabsProperties.url = "about://settings/clearBrowserData";
         TabsProperties.active = true;
+        TabsProperties.index += 1;
         chrome.tabs.create(TabsProperties, undefined);
         TabsProperties.active = temp;
     },
@@ -635,6 +639,7 @@ const HMain = {
                 return;
             }
             TabsProperties.url = href;
+            TabsProperties.index += 1;
             chrome.tabs.create(TabsProperties, undefined);
         }
     },
@@ -1015,6 +1020,14 @@ chrome.storage.local.get(
         SearchQuery.endTime = Date.now();
         //throws
         chrome.history.search(SearchQuery, searchToDOM);
+
+        //throws
+        chrome.tabs
+            .query({active: true, currentWindow: true})
+            .then(function (tab) {
+                console.log(tab);
+                TabsProperties.index = tab[0].index;
+            })
 
         document.addEventListener("keyup", DocumentOnkeyup, false);
 
