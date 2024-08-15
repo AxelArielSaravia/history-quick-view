@@ -1,7 +1,7 @@
 "use strict";
 //@ts-check
 
-const VERSION = "0.3.3";
+//version: 0.4.0
 
 const SECOND = 1000 * 60;
 const DAY = 1000 * 60 * 60 * 24;
@@ -35,6 +35,11 @@ const DeleteRange = {
     startTime: 0
 };
 
+const InitSearchQuery = {
+    endTime: 0,
+    text: ""
+};
+
 const SearchQuery = {
     endTime: 0,
     maxResults: MAX_SEARCH_RESULTS,
@@ -46,16 +51,20 @@ const STORAGE_OPEN_CURRENT = "c";
 const STORAGE_OPEN_NEW = "n";
 const STORAGE_THEME_DARK = "d";
 const STORAGE_THEME_LIGHT = "l";
+
+
 const storage = {
     focusTabs: false,
     open: STORAGE_OPEN_CURRENT,
-    theme: STORAGE_THEME_DARK
+    theme: STORAGE_THEME_DARK,
+    showSearch: true,
 };
 
 //Global Variables
 
 /**@type{undefined | number}*/
 let searchTimeout = undefined;
+let searchDateTimeout = undefined;
 let searchMode = false;
 let totalItems = 0;
 let itemsFromSearch = 0;
@@ -87,11 +96,11 @@ const TimeRange = {
     createStart(ms) {
         return ms - ((ms - TIME_OFFSET) % DAY);
     },
-    /**@type{() => boolean}*/
-    addElement() {
+    /**@type{(n: number) => boolean}*/
+    addElements(n) {
         if (TimeRange.length > 0) {
             const elements = TimeRange.elements;
-            elements[TimeRange.length - 1] += 1;
+            elements[TimeRange.length - 1] += n;
             return true;
         } else {
             return false;
@@ -185,6 +194,391 @@ const TimeRange = {
     }
 };
 
+const DateParser = {
+    MAX_VAL:       730,
+    MAX_WEEK_VAL:  240,
+    MAX_MONTH_VAL: 120,
+    MAX_YEAR_VAL:  10,
+
+    WDAYS_LEN: 7,
+    WDAYS_SHORT: [
+        "mo","tu","we","th",
+        "fr","sa","su"
+    ],
+    WDAYS_LONG: [
+        "monday","tuesday","wednesday","thursday",
+        "friday","saturday", "sunday"
+    ],
+    MONTH_LEN: 12,
+    MONTH_SHORT: [
+        "Jan","Feb","Mar","Apr",
+        "May","Jun","Jul","Aug",
+        "Sep","Oct","Nov","Dec"
+    ],
+    MONTH_LONG: [
+        "January",  "February","March",   "April",
+        "May",      "June",    "July",    "August",
+        "September","October", "November","December"
+    ],
+    MONTH_DAYS: (function() {
+        let year = (new Date()).getFullYear();
+        let feb = 28;
+        if (year % 400 === 0 || (year % 100 !== 0 && year % 4 === 0)) {
+            feb = 29;
+        }
+        return [31,feb,31,30,31,30,31,31,30,31,30,31];
+    }()),
+    /**
+     * return MONTH_<SHORT|LONG> index if success, otherwise -1
+     * @type {(month: string) => number}*/
+    checkMonth(month) {
+        for (let j = 0; j < DateParser.MONTH_LEN; j += 1) {
+            if ((month.length === 3 && month === DateParser.MONTH_SHORT[j])
+                || month === DateParser.MONTH_LONG[j]
+            ) {
+                return j;
+            }
+        }
+        return -1;
+    },
+    /**
+     * Expected string: "YYYY"
+     * return -1 if error, otherwise year
+     * @type {(year: string, tyear: number) => number}*/
+    parseYear(year, tyear) {
+        if (year.length !== 4) {
+            return -1;
+        }
+        let nyear = Number(year);
+        if (Number.isNaN(nyear)
+            || !Number.isFinite(nyear)
+            || nyear > tyear
+            || nyear < (tyear-DateParser.MAX_YEAR_VAL)
+        ) {
+            return -1;
+        }
+        return nyear;
+    },
+    /**
+     * Parse <datecalc> expression
+     * <datecalc>:
+     *  "-NN[ PP]"
+     *  <-><num>[<space><period>]
+     *
+     * <period>:
+     *  - day:   "d" | "day"   | "days"
+     *  - week:  "w" | "week"  | "weeks"
+     *  - month: "m" | "month" | "months"
+     *  - year:  "y" | "year"  | "years"
+     *
+     * examples:
+     *      "-4 d"
+     *      "-1 week"
+     *      "-5 months"
+     *
+     * periords values: 
+     *  - day:   1..MAX_DAY_VAL
+     *  - week:  1..MAX_WEEK_VAL
+     *  - month: 1..MAX_MONTH_VAL
+     *  - year:  1..MAX_YEAR_VAL
+     *
+     * returns <endtime> if success, otherwise -1
+     * @type{(expr: string) => number}*/
+    parseDatecalc(expr) {
+        //TODO: Concat <dateclac> like "<datecalc>, <datecalc>, ..."
+        let res = -1;
+        let i = expr.indexOf(" ");
+        if (i == -1) {
+            i = expr.length;
+        } else if (i+1 >= expr.length) {
+            return res;
+        }
+        let val = Number(expr.slice(0,i));
+        if (Number.isNaN(val)
+            || !Number.isFinite(val)
+            || val < 1
+            || DateParser.MAX_VAL < val
+        ) {
+            return res;
+        }
+        if (i === expr.length) {
+            res = TimeRange.createStart(Date.now()) + DAY - (DAY * val);
+            return res;
+        }
+        let kword = expr.slice(i+1);
+        if (kword === "d" || kword == "day" || kword === "days") {
+            res = TimeRange.createStart(Date.now()) + DAY - (DAY * val);
+        } else if (kword === "w" || kword == "week" || kword === "weeks") {
+            if (val > DateParser.MAX_WEEK_VAL) {
+                return res;
+            }
+            res = TimeRange.createStart(Date.now() - (DAY * 7 * val)) + DAY;
+        } else if (kword === "m" || kword == "month" || kword === "months") {
+            if (val > DateParser.MAX_MONTH_VAL) {
+                return res;
+            }
+            let d = new Date();
+            d.setMonth(d.getMonth() - val);
+            res = TimeRange.createStart(d.valueOf()) + DAY;
+        } else if (kword === "y" || kword == "year" || kword === "years") {
+            if (val > DateParser.MAX_YEAR_VAL) {
+                return res;
+            }
+            let d = new Date();
+            d.setFullYear(d.getFullYear() - val);
+            res = TimeRange.createStart(d.valueOf()) + DAY;
+        }
+        return res;
+    },
+    /**
+     * Parse <dateexpr1> expression
+     *
+     * <dateexpr1>:
+     * "DD MM[ YYYY]"
+     *  <Day><space><MonthFull|MonthShort>[<space><Year>]
+     *
+     *  example:
+     *      "1 Oct" "1 October"
+     *      "1 Oct 2020" "1 October 2020"
+     *
+     * returns <endtime> if success, otherwise -1
+     * @type {(
+     *  dexp: string,
+     *  d: Date,
+     *  tyear: number,
+     *  tmonth: number,
+     *  tday: number
+     * ) => number} */
+    parseDateexpr1(dexp, d, tyear, tmonth, tday) {
+        let nyear = tyear;
+        let nmonth = tmonth;
+        let nday = tday;
+        if (dexp.length < 5) {//expect min: "d mmm"
+            return -1;
+        }
+        //search nday
+        let p1 = dexp.indexOf(" ");
+        if (p1 === -1) {
+            return -1;
+        }
+        let sub = dexp.slice(0, p1);
+        nday = Number(sub);
+        if (Number.isNaN(nday)
+            && !Number.isFinite(nday)
+            && nday < 1
+        ) {
+            return -1;
+        }
+        if (dexp.length - (p1 + 1) < 3) { //expect min: "mmm"
+            return -1;
+        }
+        //search month expression
+        let p2 = dexp.indexOf(" ", p1+1);
+        if (p2 == -1) {
+            p2 = dexp.length;
+        }
+        sub = dexp.slice(p1+1, p2);
+        nmonth = DateParser.checkMonth(sub);
+        if (nmonth === -1
+            || nday > DateParser.MONTH_DAYS[nmonth]
+        ) {
+            return -1;
+        }
+        if (p2 < dexp.length) {
+            //check year expression
+            sub = dexp.slice(p2+1);
+            if (sub.length === 0) {
+                return -1;
+            }
+            nyear = DateParser.parseYear(sub, tyear);
+            if (nyear === -1) {
+                return -1;
+            }
+            if (tyear === nyear
+                && (
+                    nmonth > tmonth
+                    || (nmonth === tmonth && nday > tday)
+                )
+            ) {
+                return -1;
+            }
+        } else if (tyear === nyear
+            && (
+                nmonth > tmonth
+                || (nmonth === tmonth && nday > tday)
+            )
+        ) {
+            nyear -= 1;
+        }
+        d.setDate(nday);
+        d.setMonth(nmonth);
+        d.setFullYear(nyear)
+        return TimeRange.createStart(d.valueOf())+DAY;
+    },
+    /**
+     * Parse <dateexpr1> expression
+     *
+     * <dateexpr1>:
+     *  "MM[ DD[ YYYY]]"
+     *  <monthfull|monthshort>[<space>{<day>|<year>}]
+     *
+     *  example:
+     *      "Oct" "October",           <- shows from the end of the month
+     *      "Oct 2023" "October 2023"  <- shows from the end of the month
+     *      "Oct 1" "October 1"
+     *      "Oct 1 2023" "October 1 2023"
+     *
+     * returns <endtime> if success, otherwise -1
+     * @type {(
+     *  dexp: string,
+     *  d: Date,
+     *  tyear: number,
+     *  tmonth: number,
+     *  tday: number
+     * ) => number} */
+    parseDateexpr2(dexp, d, tyear, tmonth, tday) {
+     // <MonthFull|MonthShort>[<space>{<Day>|<Year>}]
+        let nyear = tyear;
+        let nmonth = tmonth;
+        let nday = tday;
+        if (dexp.length < 3) { //min expect: "mmm"
+            return -1;
+        }
+
+        let p1 = dexp.indexOf(" ");
+        if (p1 === -1) {
+            p1 = dexp.length;
+        }
+        let sub = dexp.slice(0, p1);
+        nmonth = DateParser.checkMonth(sub);
+        if (nmonth === -1) {
+            return -1;
+        }
+        if (p1 === dexp.length) {
+            if (nmonth !== tmonth) {
+                if (nmonth > tmonth) {
+                    nyear -= 1;
+                }
+                nday = DateParser.MONTH_DAYS[nmonth];
+            }
+        } else {
+            let p2 = dexp.indexOf(" ", p1+1);
+            if (p2 === -1) {
+                p2 = dexp.length;
+            }
+
+            sub = dexp.slice(p1+1, p2);
+            if (sub.length === 4) { //assume that is a year
+                nyear = DateParser.parseYear(sub);
+                if (nyear === -1) {
+                    return -1;
+                }
+                if (nyear === tyear && nmonth > tmonth) {
+                    return -1;
+                }
+                nday = DateParser.MONTH_DAYS[nmonth];
+
+            } else { //asume that is a day
+                nday = Number(sub);
+                if (Number.isNaN(nday)
+                    || !Number.isFinite(nday)
+                    || nday < 1
+                    || nday > DateParser.MONTH_DAYS[nmonth]
+                ) {
+                    return -1;
+                }
+                if (p2 < dexp.length) {
+                    //search year
+                    sub = dexp.slice(p2+1);
+                    if (sub.length === 0) {
+                        return -1;
+                    }
+                    nyear = DateParser.parseYear(sub);
+                    if (nyear === -1) {
+                        return -1;
+                    }
+                    if (tyear === nyear
+                        && (
+                            nmonth > tmonth
+                            || (nmonth === tmonth && nday > tday)
+                        )
+                    ) {
+                        return -1;
+                    }
+                } else {
+                    if (nmonth > tmonth || (nmonth === tmonth && nday > tday)) {
+                        nyear -= 1;
+                    }
+                }
+            }
+        }
+        d.setDate(nday);
+        d.setMonth(nmonth);
+        d.setFullYear(nyear)
+        return TimeRange.createStart(d.valueOf())+DAY;
+    },
+    /**
+     * Parse diferent date expressions:
+     *  - "y" | "yesterday"
+     *  - <weekDayShort>: "mo" "tu" "we" "th" "fr" "sa" "su"
+     *  - <weekDayLong>: "monday" "tuesday" "wednesday" "thursday" "friday" "saturday" "sunday"
+     *  - <datecalc>: <-><num>[<space><period>]
+     *  - <dateexp1>: <Day><space><MonthFull|MonthShort>[<space><Year>]
+     *  - <dateexp2>: <MonthFull|MonthShort>[<space><Day>[<space><Year>]]
+     *
+     * return <endtime>ms if success, otherwise -1
+     * @type{(dateStr: string) => number}*/
+    parse(expr) {
+        if (expr.length === 0) {
+            return -1;
+        }
+        let d = new Date();
+        let twday = d.getDay();
+        let tday = d.getDate();
+        let tmonth = d.getMonth();
+        let tyear = d.getFullYear();
+
+        if (expr === "y") { //yesterday
+            return TimeRange.createStart(Date.now());
+        } else if (expr[0] === "-") {
+            expr = expr.slice(1);
+            if (expr.length === 0) {
+                return -1;
+            }
+            return DateParser.parseDatecalc(expr);
+        } else if ("1" <= expr[0] && expr[0] <= "9") {
+            return DateParser.parseDateexpr1(expr, d, tyear, tmonth, tday);
+        } else if (expr === "yesterday") {
+            return TimeRange.createStart(Date.now());
+        }
+        //check <wday> expression
+        if (expr.length === 2) {
+            for (let i = 0; i < DateParser.WDAYS_LEN; i += 1) {
+                if (expr === DateParser.WDAYS_SHORT[i]) {
+                    let n = twday - (i+1);
+                    if (n <= 0) {
+                        n += 7;
+                    }
+                    return TimeRange.createStart(Date.now()) - (DAY * (n - 1))
+                }
+
+            }
+        } else if (expr.length < 10) {
+            for (let i = 0; i < DateParser.WDAYS_LEN; i += 1) {
+                if (expr === DateParser.WDAYS_LONG[i]) {
+                    let n = twday - (i+1);
+                    if (n <= 0) {
+                        n += 7;
+                    }
+                    return TimeRange.createStart(Date.now()) - (DAY * (n - 1))
+                }
+
+            }
+        }
+        return DateParser.parseDateexpr2(expr, d, tyear, tmonth, tday);
+    },
+};
+
 const Fragment = document.createDocumentFragment();
 
 /**@type{(
@@ -240,6 +634,7 @@ function initStorage(items) {
     let open = items.open;
     let focusTabs = items.focusTabs;
     let theme = items.theme
+    let showSearch = items.showSearch;
     let set = false;
     if (open === STORAGE_OPEN_NEW || open === STORAGE_OPEN_CURRENT) {
         storage.open = open;
@@ -254,6 +649,11 @@ function initStorage(items) {
     }
     if (theme === STORAGE_THEME_DARK || theme === STORAGE_THEME_LIGHT) {
         storage.theme = theme;
+    } else {
+        set = true;
+    }
+    if (showSearch !== undefined) {
+        storage.showSearch = showSearch;
     } else {
         set = true;
     }
@@ -448,7 +848,6 @@ const HItem = {
 };
 
 const HSearch = {
-    focus: false,
     /** @type{HTMLElement} */
     FORM: (function () {
         const DOMFormSearch = document.forms.namedItem("search");
@@ -459,48 +858,119 @@ const HSearch = {
     }()),
     ontimeout() {
         searchTimeout = undefined;
+        const text = HSearch.FORM["text"].value;
+        if (InitSearchQuery.text !== text) {
+            InitSearchQuery.text = text;
+            SearchQuery.text = text;
+            SearchQuery.endTime = InitSearchQuery.endTime;
 
-        HHeader.LOADING.setAttribute("data-css-hidden", "");
-        HMain.CONTAINER.replaceChildren();
+            HMain.CONTAINER.replaceChildren();
 
-        SearchQuery.endTime = Date.now();
-        SearchQuery.text = HSearch.FORM["text"].value;
+            TimeRange.reset();
+            visited.length = 0;
+            totalItems = 0;
+            lastItemId = "";
+            noMoreContent = false;
+            lastRangeIsFull = false;
 
-        TimeRange.reset();
-        visited.length = 0;
-        totalItems = 0;
-        lastItemId = "";
-        noMoreContent = false;
-        lastRangeIsFull = false;
+            HMain.EMPTY.setAttribute("data-css-hidden", "");
 
-        HMain.EMPTY.setAttribute("data-css-hidden", "");
-        chrome.history.search(SearchQuery, searchToDOM);
-        HMain.CONTAINER.onscroll = null;
+            chrome.history.search(SearchQuery, searchToDOM);
+            HMain.CONTAINER.onscroll = null;
+        } else {
+            HHeader.LOADING.setAttribute("data-css-hidden", "");
+        }
+    },
+    ondatetimeout() {
+        searchDateTimeout = undefined;
+        const text = HSearch.FORM["text"].value;
+        const target = HSearch.FORM["date"]
+        let endtime = 0;
+        if (target.value.length === 0) {
+            endtime = TimeRange.createStart(Date.now()) + DAY;
+        } else {
+            endtime = DateParser.parse(target.value);
+            if (endtime === -1) {
+                target.setAttribute("data-css-invalid", "");
+                HHeader.LOADING.setAttribute("data-css-hidden", "");
+                return;
+            }
+        }
+        if (InitSearchQuery.endTime !== endtime
+            || InitSearchQuery.text !== text
+        ) {
+            InitSearchQuery.endTime = endtime;
+            SearchQuery.endTime = endtime;
+
+            HMain.CONTAINER.replaceChildren();
+
+            TimeRange.reset();
+            visited.length = 0;
+            totalItems = 0;
+            lastItemId = "";
+            noMoreContent = false;
+            lastRangeIsFull = false;
+
+            chrome.history.search(SearchQuery, searchToDOM);
+
+            HMain.CONTAINER.onscroll = null;
+        } else {
+            HHeader.LOADING.setAttribute("data-css-hidden", "");
+        }
     },
     oninput() {
         let target = HSearch.FORM["text"];
         if (target.value.length !== 0) {
             searchMode = true;
-            HSearch.FORM["remove"].removeAttribute("data-css-hidden");
+            HSearch.FORM["clear-text"].removeAttribute("data-css-hidden");
         } else {
             searchMode = false;
-            HSearch.FORM["remove"].setAttribute("data-css-hidden", "");
+            HSearch.FORM["clear-text"].setAttribute("data-css-hidden", "");
         }
         if (searchTimeout !== undefined) {
             clearTimeout(searchTimeout);
         }
-        searchTimeout = setTimeout(HSearch.ontimeout, 500);
         HHeader.LOADING.removeAttribute("data-css-hidden");
+        searchTimeout = setTimeout(HSearch.ontimeout, 500);
     },
-    onclick() {
+    ondateinput() {
+        let target = HSearch.FORM["date"];
+        target.removeAttribute("data-css-invalid");
+        if (searchDateTimeout !== undefined) {
+            clearTimeout(searchDateTimeout);
+        }
+        HHeader.LOADING.removeAttribute("data-css-hidden");
+        searchDateTimeout = setTimeout(HSearch.ondatetimeout, 500);
+    },
+    clear() {
+        if (searchTimeout !== undefined) {
+            clearTimeout(searchTimeout);
+            searchTimeout = undefined;
+        }
+        let text = HSearch.FORM["text"].value;
+        searchMode = false;
         HSearch.FORM["text"].value = "";
-        HSearch.oninput();
+        if (text.length !== 0) {
+            HSearch.oninput();
+        } else {
+            HSearch.FORM["clear-text"].setAttribute("data-css-hidden", "");
+            HHeader.LOADING.setAttribute("data-css-hidden", "");
+        }
     },
     /**
      * @type {(e: KeyboardEvent) => undefined} */
     keydown(e) {
-        if (e.code === KEYBOARD_CODE_CLOSE && e.ctrlKey) {
-            HSearch.onclick();
+        const target = e.target;
+        const name = target.getAttribute("name");
+        if (name === "text") {
+            if (e.code === KEYBOARD_CODE_CLOSE && e.ctrlKey) {
+                HSearch.clear();
+            }
+        } else if (name === "date") {
+            if (e.code === KEYBOARD_CODE_CLOSE && e.ctrlKey) {
+                target.value = "";
+                HSearch.ondateinput();
+            }
         }
     },
 };
@@ -532,9 +1002,11 @@ const HHeader = {
             chrome.tabs.create(TabsProperties, undefined);
         }
     },
-    openClear() {
+    /**
+     * @type{(url: string) => undefined}*/
+    openActiveTab(url) {
         let temp = TabsProperties.active
-        TabsProperties.url = "about://settings/clearBrowserData";
+        TabsProperties.url = url;
         TabsProperties.active = true;
         chrome.tabs.create(TabsProperties, undefined);
         TabsProperties.active = temp;
@@ -549,7 +1021,7 @@ const HHeader = {
             HItem.open(TabsProperties, storage.open, e.ctrlKey);
 
         } else if (name === "clear") {
-            HHeader.openClear();
+            HHeader.openActiveTab("about://settings/clearBrowserData");
 
         } else if (name === "more") {
             HModalMore.open();
@@ -559,6 +1031,8 @@ const HHeader = {
 
         } else if (name === "close") {
             window.close();
+        } else if (name === "about") {
+            HHeader.openActiveTab("https://github.com/AxelArielSaravia/history-quick-view#history-quick-view");
         }
     }
 };
@@ -723,9 +1197,15 @@ const HModalMore = {
      * @type {(s: typeof storage) => undefined}*/
     init(s) {
         document.firstElementChild.setAttribute("class", s.theme);
+        if (s.showSearch) {
+            HSearch.FORM.removeAttribute("data-css-hidden");
+        } else {
+            HSearch.FORM.setAttribute("data-css-hidden", "");
+        }
         HModalMore.FORM["theme"].value = s.theme;
         HModalMore.FORM["open"].value = s.open;
         HModalMore.FORM["focus"].checked = s.focusTabs;
+        HModalMore.FORM["showsearch"].checked = s.showSearch;
     },
     open() {
         if (relatedFocusTarget === null) {
@@ -756,21 +1236,27 @@ const HModalMore = {
                     || target.value === STORAGE_THEME_LIGHT
             ) {
                 storage.theme = target.value;
-                document.firstElementChild.setAttribute("class", target.value);
                 storageChange = true;
             } else {
                 target.value = STORAGE_THEME_DARK;
-                document.firstElementChild.setAttribute("class", STORAGE_THEME_DARK);
                 if (storage.theme !== STORAGE_THEME_DARK) {
                     storage.theme = STORAGE_THEME_DARK;
                     storageChange = true;
                 }
                 console.error("WARNNING: the theme value was wrong, it will set the default");
             }
+            document.firstElementChild.setAttribute("class", target.value);
+        } else if (name === "showsearch") {
+            storage.showSearch = target.checked;
+            if (target.checked) {
+                HSearch.FORM.removeAttribute("data-css-hidden");
+            } else {
+                HSearch.FORM.setAttribute("data-css-hidden", "");
+            }
+            storageChange = true;
         } else if (name === "open") {
-            if (
-                target.value === STORAGE_OPEN_NEW
-                    || target.value === STORAGE_OPEN_CURRENT
+            if (target.value === STORAGE_OPEN_NEW
+                || target.value === STORAGE_OPEN_CURRENT
             ) {
                 storage.open = target.value;
                 storageChange = true;
@@ -820,21 +1306,17 @@ async function searchToDOM(historyItems) {
     }
     let timeRangeEnd = 0;
     let timeRangeStart = 0;
+    let tempRangeEnd = 0;
     let i = 0;
 
     let DOMRange = null;
 
     if (TimeRange.length == 0) {
-        timeRangeEnd = historyItems[0].lastVisitTime;
-        timeRangeStart = TimeRange.createStart(timeRangeEnd);
-        TimeRange.add(timeRangeEnd, timeRangeStart);
-
-        if (searchMode) {
-            DOMRange = HRange.createSearch(timeRangeStart);
-            HMain.CONTAINER.appendChild(DOMRange);
+        if (historyItems[0].lastVisitTime >= SearchQuery.endTime) {
+            timeRangeEnd = SearchQuery.endTime;
         } else {
-            DOMRange = HRange.create(timeRangeStart);
-            HMain.CONTAINER.appendChild(DOMRange);
+            timeRangeEnd = historyItems[0].lastVisitTime;
+            timeRangeStart = TimeRange.createStart(timeRangeEnd);
         }
     } else {
         timeRangeEnd = TimeRange.getLastEnd();
@@ -904,15 +1386,31 @@ async function searchToDOM(historyItems) {
             lastVisitTime = item.lastVisitTime;
         }
 
+        if (tempRangeEnd < lastVisitTime) {
+            tempRangeEnd = lastVisitTime;
+            timeRangeEnd = lastVisitTime;
+            timeRangeStart = TimeRange.createStart(timeRangeEnd);
+        }
+
         Fragment.appendChild(
             HItem.create(item.url, item.title, item.id, lastVisitTime)
         );
 
-        TimeRange.addElement();
-
         itemsCreated += 1;
         i += 1;
     }
+
+    if (TimeRange.length == 0) {
+        TimeRange.add(timeRangeEnd, timeRangeStart);
+        if (searchMode) {
+            DOMRange = HRange.createSearch(timeRangeStart);
+        } else {
+            DOMRange = HRange.create(timeRangeStart);
+        }
+        HMain.CONTAINER.appendChild(DOMRange);
+    }
+
+    TimeRange.addElements(itemsCreated);
 
     totalItems += itemsCreated;
     itemsFromSearch += itemsCreated;
@@ -988,13 +1486,12 @@ function DocumentOnkeyup (e) {
         if (e.ctrlKey || e.shiftKey) {
             return;
         }
-        if (e.code === KEYBOARD_CODE_SEARCH) {
-            HSearch.FORM["text"].focus();
-            return;
-
-        }
-        if (document.activeElement !== HSearch.FORM["text"]) {
-            if (e.code === KEYBOARD_CODE_KEYBOARD) {
+        if (document.activeElement !== HSearch.FORM["text"]
+            && document.activeElement !== HSearch.FORM["date"]
+        ) {
+            if (e.code === KEYBOARD_CODE_SEARCH) {
+                HSearch.FORM["text"].focus();
+            }else if (e.code === KEYBOARD_CODE_KEYBOARD) {
                 HModalKeyboard.open();
             } else if (e.code === KEYBOARD_CODE_MORE) {
                 HModalMore.open();
@@ -1012,7 +1509,9 @@ chrome.storage.local.get(
         initStorage(items);
         HModalMore.init(storage);
 
-        SearchQuery.endTime = Date.now();
+
+        SearchQuery.endTime = TimeRange.createStart(Date.now()) + DAY;
+        InitSearchQuery.endTime = SearchQuery.endTime;
         //throws
         chrome.history.search(SearchQuery, searchToDOM);
 
@@ -1022,7 +1521,8 @@ chrome.storage.local.get(
         HHeader.BUTTONS.addEventListener("auxclick", HHeader.onauxclick, false);
 
         HSearch.FORM["text"].addEventListener("input", HSearch.oninput, false);
-        HSearch.FORM["remove"].addEventListener("click", HSearch.onclick, false);
+        HSearch.FORM["clear-text"].addEventListener("click", HSearch.clear, false);
+        HSearch.FORM["date"].addEventListener("input", HSearch.ondateinput, false);
         HSearch.FORM.addEventListener("keydown", HSearch.keydown, false);
 
         HMain.CONTAINER.onscroll = HMain.onscroll;

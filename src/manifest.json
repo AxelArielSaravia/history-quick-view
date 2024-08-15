@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "version": "0.3.3",
+    "version": "0.4.0",
     "name": "History quick view",
     "description": "View, delete and search browsing history data",
     "author": "axarisar",
@@ -23,5 +23,6 @@
         "storage",
         "tabs",
         "history"
-    ]
+    ],
+    "homepage_url": "https://github.com/AxelArielSaravia/history-quick-view"
 }

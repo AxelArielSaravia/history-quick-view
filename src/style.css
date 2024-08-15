@@ -61,6 +61,11 @@ body {
     display: none;
 }
 
+[data-css-invalid] {
+    color: red;
+    text-decoration-line: line-through;
+}
+
 .shell::after {
     content: "";
     position: absolute;
@@ -83,6 +88,9 @@ a {
     border-radius: var(--border-radius);
 }
 
+input {
+    border-radius: var(--border-radius);
+}
 :is(button, select, input[type="checkbox"]) {
     cursor: pointer;
 }
@@ -105,10 +113,6 @@ button:hover {
 
 button:not(:hover) {
     background: transparent;
-}
-
-input, select {
-    border-radius: var(--border-radius);
 }
 
 kbd {
@@ -145,6 +149,10 @@ kbd {
     font-weight: 600;
     padding: 5px;
 }
+.header h1 span {
+    font-size: 1ch;
+    font-weight: normal;
+}
 
 .header .loading {
     animation: 2s ease-in-out 0s infinite spin;
@@ -157,15 +165,29 @@ kbd {
 }
 
 /*SEARCH*/
-form[name="search"] {
+form[name="search"]:not([data-css-hidden]) {
     --icon-size: 15px;
     display: flex;
     align-items: center;
     position: relative;
     padding: 0 15px 20px;
+    gap: 5px;
 }
 
-form[name="search"] .icon-search {
+form[name="search"] .container {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+form[name="search"] .container.text {
+    width: 65%;
+}
+form[name="search"] .container.date {
+    --font-size: 1.2rem;
+    width: 35%;
+}
+
+form[name="search"] :where(.icon-search, .icon-calendar) {
     position: absolute;
     transform: translateX(5px);
 }
@@ -174,20 +196,26 @@ form[name="search"] input {
     width: 100%;
     min-height: var(--item-height);
     background: var(--color-bg-d);
-
-    padding: 0 35px 0 30px;
-
-    font-size: var(--font-size);
     font-family: var(--font);
-
-    outline: none;
     border: none;
     line-height: 2;
+    padding-right: 1ch;
+    padding-left: calc(5px * 2 + var(--icon-size));
+    font-size: var(--font-size);
 }
 
-form[name="search"] button[name="remove"] {
+form[name="search"] .text input {
+    padding-right: 30px;
+}
+
+form[name="search"] span {
     position: absolute;
-    right: 15px;
+    font-size: var(--font-size);
+}
+
+form[name="search"] button {
+    position: absolute;
+    right: 0;
     transform: translateX(-5px);
 }
 
@@ -195,29 +223,34 @@ form[name="search"] button[name="remove"] {
 .main {
     --padding: 0px 8px;
     --icon-size: 15px;
-    --min-height: 230px;
-    --max-height: 480px;
+    --height: 476px;
 
-    min-height: var(--min-height);
+    position: relative;
+
     padding-block: 5px;
     border-top: 1px solid var(--color-hover-l);
     line-height: 2;
 }
+form[name="search"][data-css-hidden]~.main {
+    --height: 531px;
+}
 
 .main .empty:not([data-css-hidden]) {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
 
-    padding: var(--padding);
     opacity: 40%;
-    height: var(--min-height);
+    height: 100%;
+    width: 100%;
     font-size: 2rem;
 }
 
 .main .container {
     overflow: auto;
-    max-height: var(--max-height);
+    height: var(--height);
     padding-inline: 5px;
 }
 
@@ -225,7 +258,7 @@ form[name="search"] button[name="remove"] {
     width: 8px;
 }
 .main .container::-webkit-scrollbar-thumb {
-    background-color: var(--color-hover);
+    background-color: var(--color-hover-l);
 }
 
 .main :is(.date, .item) [name="remove"] {
@@ -340,7 +373,7 @@ form[name="search"] button[name="remove"] {
     width: 8px;
 }
 .modal>section::-webkit-scrollbar-thumb {
-    background-color: var(--color-hover);
+    background-color: var(--color-hover-l);
 }
 
 .modal>section header {

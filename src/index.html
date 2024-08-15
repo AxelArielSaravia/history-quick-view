@@ -90,7 +90,7 @@
     <body>
         <header class="header">
             <div class="left">
-                <h1>History Quick View</h1>
+                <h1>History Quick View <span>v0.4.0<span></h1>
                 <div id="h_loading" class="loading">
                     <svg
                         class="icon icon-loader"
@@ -209,6 +209,27 @@
                     </svg>
                 </button>
                 <button
+                    type="button"
+                    class="button shell"
+                    name="about"
+                    title="About"
+                >
+                    <svg
+                        class="icon icon-circle"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </button>
+                <button
                     name="close"
                     title="Close"
                     type="button"
@@ -235,33 +256,9 @@
             name="search"
             aria-label="on browsing history"
         >
-            <svg
-                class="icon icon-search"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-            >
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.3-4.3"/>
-            </svg>
-            <input
-                name="text"
-                type="text"
-                value=""
-                placeholder="Search history"
-            />
-            <button
-                name="remove"
-                class="shell"
-                type="button"
-                data-css-hidden
-            >
+            <div class="container text">
                 <svg
-                    class="icon icon-x"
+                    class="icon icon-search"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
                     fill="none"
@@ -270,10 +267,60 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                 >
-                    <path d="M18 6 6 18"/>
-                    <path d="m6 6 12 12"/>
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.3-4.3"/>
                 </svg>
-            </button>
+                <input
+                    name="text"
+                    type="text"
+                    value=""
+                    placeholder="Search history"
+                />
+                <button
+                    name="clear-text"
+                    class="shell"
+                    type="button"
+                    data-css-hidden
+                >
+                    <svg
+                        class="icon icon-x"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="container date">
+                <svg
+                    class="icon icon-calendar"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path d="M8 2v4"/>
+                    <path d="M16 2v4"/>
+                    <rect width="18" height="18" x="3" y="4" rx="2"/>
+                    <path d="M3 10h18"/>
+                </svg>
+                <input
+                    name="date"
+                    type="text"
+                    value=""
+                    maxlength="17"
+                    placeholder="today"
+                />
+            </div>
         </form>
         <main class="main">
             <p id="m_empty" class="empty" data-css-hidden>
@@ -308,6 +355,10 @@
                             <option value="d">Dark</option>
                             <option value="l">Light</option>
                         </select>
+                    </div>
+                    <div class="field">
+                        <p>Show Search bar:</p>
+                        <input name="showsearch" type="checkbox" checkd>
                     </div>
                     <div class="field">
                         <p
