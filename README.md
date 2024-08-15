@@ -41,19 +41,6 @@ This extension is created for my own necessities. If you have some bugs or you n
 | <kbd>m</kbd> | open or close the "more modal" |
 | <kbd>k</kbd> | open or close the "keyboard modal" |
 
-- <Tab>: Normal navigation 
-- <s>: focus search input 
-- <Ctrl>+<q>: on search input, removes the search input text
-- <r>: on item, remove the item 
-- <Shift>+<r>: on item, remove the complete day range 
-- <Ctrl>+<Enter>: on item, opens the item in a contrary way of the configurations 
-- <Ctrl>+<kbd>mouse click</kbd>: on item, opens the item in a contrary way of the configurations 
-- <Shift>+<Enter>: on item, opens the item in a new windows 
-- <Shift>+<kbd>mouse click</kbd>: on item, opens the item in a new windows 
-- <Ctrl>+<q>: close any kind of modal 
-- <m>: open or close the "more modal" 
-- <k>: open or close the "keyboard modal" 
-
 ### Search by date
 
 This feature allows you to start your search from a specific date,
