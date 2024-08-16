@@ -1,7 +1,7 @@
 "use strict";
 //@ts-check
 
-//version: 0.4.0
+//version: 0.4.1
 
 const SECOND = 1000 * 60;
 const DAY = 1000 * 60 * 60 * 24;
