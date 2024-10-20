@@ -1,7 +1,8 @@
 "use strict";
+
 //@ts-check
 
-//version: 0.4.1
+//version: 0.4.2
 
 const SECOND = 1000 * 60;
 const DAY = 1000 * 60 * 60 * 24;
@@ -178,6 +179,17 @@ const TimeRange = {
     },
     /**@type{(end: number, start: number) => number}*/
     add(end, start) {
+        if (end < start
+            || (
+                TimeRange.length > 0
+                && (
+                    end > TimeRange.starts[TimeRange.length-1]
+                    || start === TimeRange.starts[TimeRange.length-1]
+                )
+            )
+        ) {
+            return -1;
+        }
         TimeRange.ends.push(end);
         TimeRange.starts.push(start);
         TimeRange.elements.push(0);
@@ -189,7 +201,9 @@ const TimeRange = {
      * @type{(ms: number) => number}*/
     addFrom(ms) {
         let start = TimeRange.createStart(ms);
-        TimeRange.add(start + DAY, start);
+        if (TimeRange.add(start + DAY, start) === -1) {
+            return -1;
+        };
         return start + DAY;
     }
 };
@@ -856,6 +870,7 @@ const HSearch = {
         }
         return DOMFormSearch;
     }()),
+    TIMEOUT: 500, //ms
     ontimeout() {
         searchTimeout = undefined;
         const text = HSearch.FORM["text"].value;
@@ -876,6 +891,7 @@ const HSearch = {
             HMain.EMPTY.setAttribute("data-css-hidden", "");
 
             chrome.history.search(SearchQuery, searchToDOM);
+
             HMain.CONTAINER.onscroll = null;
         } else {
             HHeader.LOADING.setAttribute("data-css-hidden", "");
@@ -905,6 +921,7 @@ const HSearch = {
             HMain.CONTAINER.replaceChildren();
 
             TimeRange.reset();
+
             visited.length = 0;
             totalItems = 0;
             lastItemId = "";
@@ -931,7 +948,7 @@ const HSearch = {
             clearTimeout(searchTimeout);
         }
         HHeader.LOADING.removeAttribute("data-css-hidden");
-        searchTimeout = setTimeout(HSearch.ontimeout, 500);
+        searchTimeout = setTimeout(HSearch.ontimeout, HSearch.TIMEOUT);
     },
     ondateinput() {
         let target = HSearch.FORM["date"];
@@ -940,7 +957,7 @@ const HSearch = {
             clearTimeout(searchDateTimeout);
         }
         HHeader.LOADING.removeAttribute("data-css-hidden");
-        searchDateTimeout = setTimeout(HSearch.ondatetimeout, 500);
+        searchDateTimeout = setTimeout(HSearch.ondatetimeout, HSearch.TIMEOUT);
     },
     clear() {
         if (searchTimeout !== undefined) {
@@ -1279,6 +1296,36 @@ const HModalMore = {
     },
 };
 
+
+const HError = {
+    COMPONENT: (function () {
+        const DOMError = document.getElementById("m_error");
+        if (DOMError === null) {
+            throw Error("ERRORP: #m_error does not exist")
+        }
+        return DOMError;
+    }()),
+    /**@type{(msg:string) => undefined}*/
+    set(msg) {
+        HMain.CONTAINER.replaceChildren();
+        HMain.EMPTY.setAttribute("data-css-hidden", "");
+        HError.COMPONENT.children["msg"].textContent = msg;
+        HError.COMPONENT.removeAttribute("data-css-hidden");
+
+        HSearch.FORM["text"].removeEventListener("input", HSearch.oninput, false);
+        HSearch.FORM["clear-text"].removeEventListener("click", HSearch.clear, false);
+        HSearch.FORM["date"].removeEventListener("input", HSearch.ondateinput, false);
+        HSearch.FORM.removeEventListener("keydown", HSearch.keydown, false);
+
+        HMain.CONTAINER.onscroll = null;
+        HMain.CONTAINER.removeEventListener("click", HMain.onclick, false);
+        HMain.CONTAINER.removeEventListener("auxclick", HMain.onauxclick, false);
+        HMain.CONTAINER.removeEventListener("keyup", HMain.onkeyup, false);
+
+        throw Error(msg);
+    }
+}
+
 /**
  * @throws {Error} If #m_container does not have children
  * @type{(historyItems: Array<chrome.history.HistoryItem>) => Promise<undefined>}*/
@@ -1306,17 +1353,21 @@ async function searchToDOM(historyItems) {
     }
     let timeRangeEnd = 0;
     let timeRangeStart = 0;
-    let tempRangeEnd = 0;
     let i = 0;
 
     let DOMRange = null;
 
     if (TimeRange.length == 0) {
-        if (historyItems[0].lastVisitTime >= SearchQuery.endTime) {
-            timeRangeEnd = SearchQuery.endTime;
+        if (historyItems[0].lastVisitTime < SearchQuery.endTime) {
+            timeRangeStart = TimeRange.createStart(
+                historyItems[0].lastVisitTime
+            );
+            timeRangeEnd = timeRangeStart + DAY;
+            console.info("New range");
+            console.info("timeRangeEnd:", timeRangeEnd);
+            console.info("timeRangeStart:", timeRangeStart);
         } else {
-            timeRangeEnd = historyItems[0].lastVisitTime;
-            timeRangeStart = TimeRange.createStart(timeRangeEnd);
+            timeRangeEnd = SearchQuery.endTime;
         }
     } else {
         timeRangeEnd = TimeRange.getLastEnd();
@@ -1325,23 +1376,8 @@ async function searchToDOM(historyItems) {
         if (historyItems[0].id === lastItemId) {
             i = 1;
         }
-        if (lastRangeIsFull) {
-            lastRangeIsFull = false;
-
-            if (searchMode) {
-                DOMRange = HRange.createSearch(timeRangeStart);
-                HMain.CONTAINER.appendChild(DOMRange);
-            } else {
-                DOMRange = HRange.create(timeRangeStart);
-                HMain.CONTAINER.appendChild(DOMRange);
-            }
-        } else {
-            DOMRange = HMain.CONTAINER.lastElementChild;
-        }
-
-        if (DOMRange === null) {
-            throw Error("#m_container.lastElementChild is null");
-        }
+        console.info("timeRangeEnd:", timeRangeEnd);
+        console.info("timeRangeStart:", timeRangeStart);
     }
 
     let lastVisitTime = 0;
@@ -1352,9 +1388,10 @@ async function searchToDOM(historyItems) {
         item = historyItems[i];
         if (item.lastVisitTime < timeRangeStart) {
             lastVisitTime = item.lastVisitTime;
+            console.info("End of range");
             break;
         }
-        if (item.visitCount !== undefined && item.visitCount > 1) {
+        if (item.visitCount > 1 || timeRangeEnd < item.lastVisitTime) {
             if (visited.includes(item.id)) {
                 i += 1;
                 continue;
@@ -1368,6 +1405,7 @@ async function searchToDOM(historyItems) {
                     visits = await chrome.history.getVisits(UrlDetails);
                 } catch (e) {
                     console.error(e.message);
+                    i += 1;
                     continue;
                 }
                 let visitTime = getClosestVisit(visits, timeRangeEnd);
@@ -1376,7 +1414,14 @@ async function searchToDOM(historyItems) {
                     continue
                 }
                 lastVisitTime = visitTime;
-                if (lastVisitTime < timeRangeStart) {
+
+                if (timeRangeStart === 0) {
+                    timeRangeStart = TimeRange.createStart(visitTime);
+                    timeRangeEnd = timeRangeStart + DAY;
+                    console.info("timeRangeEnd:", timeRangeEnd);
+                    console.info("timeRangeStart:", timeRangeStart);
+                } else if (lastVisitTime < timeRangeStart) {
+                    console.info("End of range");
                     break;
                 }
             } else {
@@ -1386,12 +1431,6 @@ async function searchToDOM(historyItems) {
             lastVisitTime = item.lastVisitTime;
         }
 
-        if (tempRangeEnd < lastVisitTime) {
-            tempRangeEnd = lastVisitTime;
-            timeRangeEnd = lastVisitTime;
-            timeRangeStart = TimeRange.createStart(timeRangeEnd);
-        }
-
         Fragment.appendChild(
             HItem.create(item.url, item.title, item.id, lastVisitTime)
         );
@@ -1399,15 +1438,36 @@ async function searchToDOM(historyItems) {
         itemsCreated += 1;
         i += 1;
     }
+    console.info("item:")
+    console.info("\tlastVisitTime:", lastVisitTime);
+    console.info("\turl:", item.url);
+
 
     if (TimeRange.length == 0) {
-        TimeRange.add(timeRangeEnd, timeRangeStart);
+        if (-1 === TimeRange.add(timeRangeEnd, timeRangeStart)) {
+            HError.set("Creating Time Range fails");
+        }
         if (searchMode) {
             DOMRange = HRange.createSearch(timeRangeStart);
         } else {
             DOMRange = HRange.create(timeRangeStart);
         }
         HMain.CONTAINER.appendChild(DOMRange);
+    } else if (lastRangeIsFull) {
+        lastRangeIsFull = false;
+
+        if (searchMode) {
+            DOMRange = HRange.createSearch(timeRangeStart);
+            HMain.CONTAINER.appendChild(DOMRange);
+        } else {
+            DOMRange = HRange.create(timeRangeStart);
+            HMain.CONTAINER.appendChild(DOMRange);
+        }
+    } else {
+        DOMRange = HMain.CONTAINER.lastElementChild;
+    }
+    if (DOMRange === null) {
+        HError.set("DOMRange is null");
     }
 
     TimeRange.addElements(itemsCreated);
@@ -1415,11 +1475,20 @@ async function searchToDOM(historyItems) {
     totalItems += itemsCreated;
     itemsFromSearch += itemsCreated;
 
+    console.info("items created:", itemsCreated);
+    console.info("items from search:", itemsFromSearch);
+    console.info("total items:", totalItems);
+
     if (i < historyItems.length) {
         //new range
         lastRangeIsFull = true;
         visited.length = 0;
-        SearchQuery.endTime = TimeRange.addFrom(lastVisitTime);
+        console.info("New range");
+        let t = TimeRange.addFrom(lastVisitTime);
+        if (t === -1) {
+            HError.set("Creating Time Range fails");
+        }
+        SearchQuery.endTime = t
         lastItemId = "";
     } else {
         SearchQuery.endTime = lastVisitTime;

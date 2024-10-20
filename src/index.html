@@ -90,7 +90,13 @@
     <body>
         <header class="header">
             <div class="left">
-                <h1>History Quick View <span>v0.4.1<span></h1>
+                <h1><a
+                    href="https://chromewebstore.google.com/detail/history-quick-view/ednfjcijimijfccmlfbeejidmbekdmic"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                >
+                    History Quick View
+                </a> <span>v0.4.2<span></h1>
                 <div id="h_loading" class="loading">
                     <svg
                         class="icon icon-loader"
@@ -326,6 +332,15 @@
             <p id="m_empty" class="empty" data-css-hidden>
                 No History
             </p>
+            <section id="m_error" class="error" data-css-hidden>
+                <h3>Sorry, an ERROR occurs</h3>
+                <span name="msg"></span>
+                <span>please report to <a
+                    href="https://github.com/AxelArielSaravia/history-quick-view/issues"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                >github</a></span>
+            </section>
             <div id="m_container" class="container"></div>
         </main>
         <div id="modal_more" data-action="close" class="modal" data-css-hidden>
