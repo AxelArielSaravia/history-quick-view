@@ -90,13 +90,15 @@
     <body>
         <header class="header">
             <div class="left">
-                <h1><a
-                    href="https://chromewebstore.google.com/detail/history-quick-view/ednfjcijimijfccmlfbeejidmbekdmic"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                >
-                    History Quick View
-                </a> <span>v0.4.2<span></h1>
+                <h1>
+                    <a
+                        href="https://chromewebstore.google.com/detail/history-quick-view/ednfjcijimijfccmlfbeejidmbekdmic"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                    >
+                        History Quick View
+                    </a>
+                </h1>
                 <div id="h_loading" class="loading">
                     <svg
                         class="icon icon-loader"
@@ -166,15 +168,14 @@
                     </svg>
                 </button>
                 <button
-                    name="more"
-                    title="More"
                     type="button"
-                    class="shell"
+                    class="button shell"
+                    name="about"
+                    title="About"
                 >
                     <svg
-                        class="icon icon-ellipsis"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24" height="24"
+                        class="icon icon-circle"
+                        height="24"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -182,9 +183,9 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                     >
-                        <circle cx="12" cy="12" r="1"/>
-                        <circle cx="19" cy="12" r="1"/>
-                        <circle cx="5" cy="12" r="1"/>
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
                 </button>
                 <button
@@ -215,14 +216,15 @@
                     </svg>
                 </button>
                 <button
+                    name="more"
+                    title="More"
                     type="button"
-                    class="button shell"
-                    name="about"
-                    title="About"
+                    class="shell"
                 >
                     <svg
-                        class="icon icon-circle"
-                        height="24"
+                        class="icon icon-ellipsis"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24" height="24"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -230,9 +232,9 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                     >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="19" cy="12" r="1"/>
+                        <circle cx="5" cy="12" r="1"/>
                     </svg>
                 </button>
                 <button
@@ -257,99 +259,16 @@
                 </button>
             </nav>
         </header>
-        <form
-            role="search"
-            name="search"
-            aria-label="on browsing history"
-        >
-            <div class="container text">
-                <svg
-                    class="icon icon-search"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+        <main id="main" data-show="search">
+            <section name="search" id="section_search">
+                <form
+                    role="search"
+                    name="search"
+                    aria-label="on browsing history"
                 >
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.3-4.3"/>
-                </svg>
-                <input
-                    name="text"
-                    type="text"
-                    value=""
-                    placeholder="Search history"
-                />
-                <button
-                    name="clear-text"
-                    class="shell"
-                    type="button"
-                    data-css-hidden
-                >
-                    <svg
-                        class="icon icon-x"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M18 6 6 18"/>
-                        <path d="m6 6 12 12"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="container date">
-                <svg
-                    class="icon icon-calendar"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-                    <path d="M8 2v4"/>
-                    <path d="M16 2v4"/>
-                    <rect width="18" height="18" x="3" y="4" rx="2"/>
-                    <path d="M3 10h18"/>
-                </svg>
-                <input
-                    name="date"
-                    type="text"
-                    value=""
-                    maxlength="17"
-                    placeholder="today"
-                />
-            </div>
-        </form>
-        <main class="main">
-            <p id="m_empty" class="empty" data-css-hidden>
-                No History
-            </p>
-            <section id="m_error" class="error" data-css-hidden>
-                <h3>Sorry, an ERROR occurs</h3>
-                <span name="msg"></span>
-                <span>please report to <a
-                    href="https://github.com/AxelArielSaravia/history-quick-view/issues"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                >github</a></span>
-            </section>
-            <div id="m_container" class="container"></div>
-        </main>
-        <div id="modal_more" data-action="close" class="modal" data-css-hidden>
-            <section>
-                <header>
-                    <h2>Configuration</h2>
-                    <button class="shell" data-action="close" type="button">
+                    <div class="container text">
                         <svg
-                            class="icon icon-x"
+                            class="icon icon-search"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
                             fill="none"
@@ -358,8 +277,95 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                         >
-                            <path d="M18 6 6 18"/>
-                            <path d="m6 6 12 12"/>
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        <input
+                            name="text"
+                            type="text"
+                            value=""
+                            placeholder="Search history"
+                        />
+                        <button
+                            name="clear-text"
+                            class="shell"
+                            type="button"
+                            data-css-hidden
+                        >
+                            <svg
+                                class="icon icon-x"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path d="M18 6 6 18"/>
+                                <path d="m6 6 12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="container date">
+                        <svg
+                            class="icon icon-calendar"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M8 2v4"/>
+                            <path d="M16 2v4"/>
+                            <rect width="18" height="18" x="3" y="4" rx="2"/>
+                            <path d="M3 10h18"/>
+                        </svg>
+                        <input
+                            name="date"
+                            type="text"
+                            value=""
+                            maxlength="17"
+                            placeholder="today"
+                        />
+                    </div>
+                </form>
+                <div class="search-container">
+                    <p id="m_empty" class="empty" data-css-hidden>
+                        No History
+                    </p>
+                    <section id="m_error" class="error" data-css-hidden>
+                        <h3>Sorry, an ERROR occurs</h3>
+                        <span name="msg"></span>
+                        <span>please report to <a
+                            href="https://github.com/AxelArielSaravia/history-quick-view/issues"
+                            target="_blank"
+                            rel="noreferrer noopener"
+                        >github</a></span>
+                    </section>
+                    <div id="m_container" class="container">
+                    </div>
+                </div>
+            </section>
+            <section name="more" id="section_more" class="page">
+                <header>
+                    <h2>Configuration</h2>
+                    <button class="shell" data-action="close" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="24" height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="icon icon-arrow-left-from-line"
+                        >
+                            <path d="m9 6-6 6 6 6"/>
+                            <path d="M3 12h14"/>
+                            <path d="M21 19V5"/>
                         </svg>
                     </button>
                 </header>
@@ -392,46 +398,48 @@
                     </div>
                 </form>
                 <footer class="socials">
-                    <p>created by <strong>Axel Ariel Saravia</strong></p>
-                    <a
-                        href="https://github.com/AxelArielSaravia/history-quick-view"
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        aria-label="github"
-                    >
-                        <svg
-                            class="icon icon-github"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                    <p class="version">v0.4.3</p>
+                    <div>
+                        <p>created by <strong>Axel Ariel Saravia</strong></p>
+                        <a
+                            href="https://github.com/AxelArielSaravia/history-quick-view"
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            aria-label="github"
                         >
-                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-                        </svg>
-                    </a>
+                            <svg
+                                class="icon icon-github"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                            </svg>
+                        </a>
+                    </div>
                 </footer>
             </section>
-        </div>
-        <div id="modal_keyboard" class="modal" data-action="close" data-css-hidden>
-            <section>
+            <section name="keyboard" id="section_keyboard" class="page">
                 <header>
                     <h2>Commands</h2>
                     <button class="shell" data-action="close" type="button">
-                        <svg
-                            class="icon icon-x"
-                            xmlns="http://www.w3.org/2000/svg"
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="24" height="24"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2"
                             stroke-linecap="round"
                             stroke-linejoin="round"
+                            class="icon icon-arrow-left-from-line"
                         >
-                            <path d="M18 6 6 18"/>
-                            <path d="m6 6 12 12"/>
+                            <path d="m9 6-6 6 6 6"/>
+                            <path d="M3 12h14"/>
+                            <path d="M21 19V5"/>
                         </svg>
                     </button>
                 </header>
@@ -476,12 +484,12 @@
                 <hr>
                 <article>
                     <h3><kbd>Ctrl</kbd> + <kbd>q</kbd></h3>
-                    <p>close any kind of modal.</p>
+                    <p>close any kind of section.</p>
                 </article>
                 <article>
                     <h3><kbd>m</kbd></h3>
                     <p>
-                        open or close the "more (<svg
+                        open or close the "more section <svg
                             class="icon icon-ellipsis"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -494,13 +502,13 @@
                             <circle cx="12" cy="12" r="1"/>
                             <circle cx="19" cy="12" r="1"/>
                             <circle cx="5" cy="12" r="1"/>
-                        </svg>) modal".
+                        </svg>".
                     </p>
                 </article>
                 <article>
                     <h3><kbd>k</kbd></h3>
                     <p>
-                        open or close the "keyboard (<svg
+                        open or close the "keyboard section <svg
                             xmlns="http://www.w3.org/2000/svg"
                             class="icon icon-keyboard"
                             viewBox="0 0 24 24"
@@ -519,10 +527,10 @@
                             <path d="M7 16h10"/>
                             <path d="M8 12h.01"/>
                             <rect width="20" height="16" x="2" y="4" rx="2"/>
-                        </svg>) modal".
+                        </svg>".
                     </p>
                 </article>
             </section>
-        </div>
+        </main>
     </body>
 </html>

@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "version": "0.4.2",
+    "version": "0.4.3",
     "name": "History quick view",
     "description": "View, delete and search browsing history data",
     "author": "axarisar",

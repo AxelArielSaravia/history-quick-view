@@ -2,6 +2,8 @@
 # Bun.js to bundle and minify javascript (https://bun.sh/)
 # tdewolff/minify to minify html, css and json (https://github.com/tdewolff/minify)
 
+version="$1"
+
 if [[ ! -d "./extension" ]]; then
     mkdir ./extension
 fi
@@ -28,4 +30,11 @@ fi
 minify -o ./extension/manifest.json ./src/manifest.json
 if [[ $? == 0 ]]; then
     echo manifest.json minified success
+fi
+
+if [[ "$version" != "" ]]; then
+    cd ./extension
+    zip  "history-quick-view-v$version.zip" ./* ./images/*
+    cd ../
+    mv ./extension/"history-quick-view-v$version.zip" ./zips
 fi

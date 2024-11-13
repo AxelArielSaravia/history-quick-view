@@ -11,6 +11,8 @@
     --item-height: 35px;
 
     --border-radius: 5px;
+    --search-height: 476px;
+    --page-height: 531px;
 }
 
 html {
@@ -168,7 +170,7 @@ kbd {
     }
 }
 
-/*SEARCH*/
+
 form[name="search"]:not([data-css-hidden]) {
     --icon-size: 15px;
     display: flex;
@@ -223,11 +225,10 @@ form[name="search"] button {
     transform: translateX(-5px);
 }
 
-/*MAIN*/
-.main {
+.search-container {
     --padding: 0px 8px;
     --icon-size: 15px;
-    --height: 476px;
+    --height: var(--search-height);
 
     position: relative;
 
@@ -235,11 +236,11 @@ form[name="search"] button {
     border-top: 1px solid var(--color-hover-l);
     line-height: 2;
 }
-form[name="search"][data-css-hidden]~.main {
-    --height: 531px;
+form[name="search"][data-css-hidden]~.search-container {
+    --height: var(--page-height);
 }
 
-.main :is(.empty,.error):not([data-css-hidden]) {
+.search-container :is(.empty,.error):not([data-css-hidden]) {
     position: absolute;
     inset: 0;
     display: flex;
@@ -252,48 +253,44 @@ form[name="search"][data-css-hidden]~.main {
     width: 100%;
     font-size: 2rem;
 }
-.main .error h3 {
+.search-container .error h3 {
     font-size: 2.2rem;
     color: red;
 }
 
-.main .error a {
+.search-container .error a {
     color: red;
 }
 
-.modal>section::-webkit-scrollbar-thumb {
-    background-color: var(--color-hover-l);
-}
-
-.main .container {
+.search-container .container {
     overflow: auto;
     height: var(--height);
     padding-inline: 5px;
 }
 
-.main .container::-webkit-scrollbar {
+.search-container .container::-webkit-scrollbar {
     width: 8px;
 }
-.main .container::-webkit-scrollbar-thumb {
+.search-container .container::-webkit-scrollbar-thumb {
     background-color: var(--color-hover-l);
 }
 
-.main :is(.date, .item) [name="remove"] {
+.search-container :is(.date, .item) [name="remove"] {
     position: absolute;
     top: 5px;
     right: 5px;
     z-index: var(--z-index-mid);
 }
 
-.main :is(.item, .date):not(:hover) {
+.search-container :is(.item, .date):not(:hover) {
     background: var(--color-bg);
 }
 
-.main :is(.item, .date):hover {
+.search-container :is(.item, .date):hover {
     background: var(--color-hover);
 }
 
-.main .date {
+.search-container .date {
     position: sticky;
     top: 0;
     z-index: var(--z-index-high);
@@ -304,7 +301,7 @@ form[name="search"][data-css-hidden]~.main {
     border-radius: var(--border-radius);
 }
 
-.main .item {
+.search-container .item {
     position: relative;
     display: flex;
     align-items: center;
@@ -314,28 +311,28 @@ form[name="search"][data-css-hidden]~.main {
     outline-offset: -2px;
     border-radius: var(--border-radius);
 }
-.main .item::before {
+.search-container .item::before {
     content: "";
     position: absolute;
     width: 30px;
     height: 70%;
     right: 60px;
 }
-.main .item:not(:hover)::before {
+.search-container .item:not(:hover)::before {
     background: linear-gradient(to left, var(--color-bg), transparent);
 }
-.main .item:hover::before {
+.search-container .item:hover::before {
     background: linear-gradient(to left, var(--color-hover), transparent);
 }
 
-.main .item [name="title"] {
+.search-container .item [name="title"] {
     width: 100%;
     white-space: nowrap;
     overflow: hidden;
     padding-left: 10px;
 }
 
-.main .item [name="time"] {
+.search-container .item [name="time"] {
     --font-size: 1.2rem;
     position: relative;
     text-align: right;
@@ -343,108 +340,103 @@ form[name="search"][data-css-hidden]~.main {
     opacity: 80%;
 }
 
-.main .item:hover [name="time"] {
+.search-container .item:hover [name="time"] {
     visibility: hidden;
 }
 
-.main .item:not(:hover) [name="remove"] {
+.search-container .item:not(:hover) [name="remove"] {
     display: none;
 }
 
-.modal:not([data-css-hidden]) {
-    display:flex;
-    justify-content: center;
-}
 
-
-/*MODAL*/
-
-.modal {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: var(--z-index-high);
-}
-
-.modal::before {
-    content: "";
-    width: 100%;
-    height: 100%;
-    background: var(--color-bg-d);
-    opacity: 0.6;
-
-}
-
-.modal>section {
-    position: absolute;
-    transform: translateY(40px);
-    padding: 10px;
-    background: var(--color-bg);
-    width: 90%;
-    max-height: 520px;
+.page {
     overflow: auto;
-    border-radius: var(--border-radius);
+    width: 100%;
+    height: var(--page-height);
+    padding: 0 10px 10px;
 }
-.modal>section::-webkit-scrollbar {
+
+.page::-webkit-scrollbar-thumb {
+    background-color: var(--color-hover-l);
+}
+.page::-webkit-scrollbar {
     width: 8px;
 }
 
-.modal>section header {
+.page>header {
+    position: sticky;
+    top: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 10px;
+    padding: 10px 0 20px;
+    background: var(--color-bg);
+}
+.page>header::after {
+    content: "";
+    position: absolute;
+    bottom: 10px;
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: var(--color-hover-l);
 }
 
-.modal form {
+.page[name="more"] form {
     padding-block: 10px;
 }
 
-.modal form .field {
+.page[name="more"] form .field {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 10px;
 }
 
-.modal form input[type="checkbox"] {
+.page[name="more"] form input[type="checkbox"] {
     width: 20px;
     height: 20px;
 }
 
-.modal footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 20px;
-    border-top: 1px solid var(--color-hover-l);
-}
-
-.modal footer a {
-    padding: 5px;
-}
-
-.modal footer a:hover {
-    background: var(--color-hover);
-}
-
-
-.modal article {
+.page[name="keyboard"] article {
     padding: 10px 0;
     display: flex;
 }
-.modal article h3 {
+.page[name="keyboard"] article h3 {
     --font-size: 1.2rem;
     flex-shrink: 0;
     line-height: 2;
 }
 
-.modal article p {
+.page[name="keyboard"] article p {
     padding-left: 10px;
 }
 
-.modal hr {
+.page[name="keyboard"] hr {
     margin: 10px 0;
     border-color: var(--color);
+}
+
+:is(
+    main[data-show="search"]>:not([name="search"]),
+    main[data-show="more"]>:not([name="more"]),
+    main[data-show="keyboard"]>:not([name="keyboard"])
+) {
+    display: none;
+}
+.page footer {
+    padding-top: 20px;
+    border-top: 1px solid var(--color-hover-l);
+}
+.page footer div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.page footer a {
+    padding: 5px
+}
+
+.page footer a:hover {
+    background: var(--color-hover);
 }

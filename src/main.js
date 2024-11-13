@@ -2,8 +2,6 @@
 
 //@ts-check
 
-//version: 0.4.2
-
 const SECOND = 1000 * 60;
 const DAY = 1000 * 60 * 60 * 24;
 
@@ -75,11 +73,11 @@ let lastRangeIsFull = false;
 let lastItemId = "";
 
 /**
- * @type {null | HTMLElement} */
-let relatedFocusTarget = null;
+ * @type {HTMLElement} */
+let relatedFocusTarget = document.body;
 function focusRelatedTarget() {
     relatedFocusTarget?.focus();
-    relatedFocusTarget = null;
+    relatedFocusTarget = document.body;
 }
 
 const TimeRange = {
@@ -676,14 +674,6 @@ function initStorage(items) {
     }
 }
 
-function closeModal(DOMModal) {
-    HHeader.BUTTONS.inert = false;
-    HSearch.FORM.inert = false;
-    HMain.CONTAINER.inert = false;
-    DOMModal?.setAttribute("data-css-hidden", "");
-    focusRelatedTarget();
-}
-
 const HRange = {
     /** @type {DocumentFragment} */
     TEMPLATE: (function () {
@@ -861,7 +851,7 @@ const HItem = {
     },
 };
 
-const HSearch = {
+const HSearchForm = {
     /** @type{HTMLElement} */
     FORM: (function () {
         const DOMFormSearch = document.forms.namedItem("search");
@@ -873,13 +863,13 @@ const HSearch = {
     TIMEOUT: 500, //ms
     ontimeout() {
         searchTimeout = undefined;
-        const text = HSearch.FORM["text"].value;
+        const text = HSearchForm.FORM["text"].value;
         if (InitSearchQuery.text !== text) {
             InitSearchQuery.text = text;
             SearchQuery.text = text;
             SearchQuery.endTime = InitSearchQuery.endTime;
 
-            HMain.CONTAINER.replaceChildren();
+            HSearchCointainer.CONTAINER.replaceChildren();
 
             TimeRange.reset();
             visited.length = 0;
@@ -888,19 +878,19 @@ const HSearch = {
             noMoreContent = false;
             lastRangeIsFull = false;
 
-            HMain.EMPTY.setAttribute("data-css-hidden", "");
+            HSearchCointainer.EMPTY.setAttribute("data-css-hidden", "");
 
             chrome.history.search(SearchQuery, searchToDOM);
 
-            HMain.CONTAINER.onscroll = null;
+            HSearchCointainer.CONTAINER.onscroll = null;
         } else {
             HHeader.LOADING.setAttribute("data-css-hidden", "");
         }
     },
     ondatetimeout() {
         searchDateTimeout = undefined;
-        const text = HSearch.FORM["text"].value;
-        const target = HSearch.FORM["date"]
+        const text = HSearchForm.FORM["text"].value;
+        const target = HSearchForm.FORM["date"]
         let endtime = 0;
         if (target.value.length === 0) {
             endtime = TimeRange.createStart(Date.now()) + DAY;
@@ -918,7 +908,7 @@ const HSearch = {
             InitSearchQuery.endTime = endtime;
             SearchQuery.endTime = endtime;
 
-            HMain.CONTAINER.replaceChildren();
+            HSearchCointainer.CONTAINER.replaceChildren();
 
             TimeRange.reset();
 
@@ -930,47 +920,47 @@ const HSearch = {
 
             chrome.history.search(SearchQuery, searchToDOM);
 
-            HMain.CONTAINER.onscroll = null;
+            HSearchCointainer.CONTAINER.onscroll = null;
         } else {
             HHeader.LOADING.setAttribute("data-css-hidden", "");
         }
     },
     oninput() {
-        let target = HSearch.FORM["text"];
+        let target = HSearchForm.FORM["text"];
         if (target.value.length !== 0) {
             searchMode = true;
-            HSearch.FORM["clear-text"].removeAttribute("data-css-hidden");
+            HSearchForm.FORM["clear-text"].removeAttribute("data-css-hidden");
         } else {
             searchMode = false;
-            HSearch.FORM["clear-text"].setAttribute("data-css-hidden", "");
+            HSearchForm.FORM["clear-text"].setAttribute("data-css-hidden", "");
         }
         if (searchTimeout !== undefined) {
             clearTimeout(searchTimeout);
         }
         HHeader.LOADING.removeAttribute("data-css-hidden");
-        searchTimeout = setTimeout(HSearch.ontimeout, HSearch.TIMEOUT);
+        searchTimeout = setTimeout(HSearchForm.ontimeout, HSearchForm.TIMEOUT);
     },
     ondateinput() {
-        let target = HSearch.FORM["date"];
+        let target = HSearchForm.FORM["date"];
         target.removeAttribute("data-css-invalid");
         if (searchDateTimeout !== undefined) {
             clearTimeout(searchDateTimeout);
         }
         HHeader.LOADING.removeAttribute("data-css-hidden");
-        searchDateTimeout = setTimeout(HSearch.ondatetimeout, HSearch.TIMEOUT);
+        searchDateTimeout = setTimeout(HSearchForm.ondatetimeout, HSearchForm.TIMEOUT);
     },
     clear() {
         if (searchTimeout !== undefined) {
             clearTimeout(searchTimeout);
             searchTimeout = undefined;
         }
-        let text = HSearch.FORM["text"].value;
+        let text = HSearchForm.FORM["text"].value;
         searchMode = false;
-        HSearch.FORM["text"].value = "";
+        HSearchForm.FORM["text"].value = "";
         if (text.length !== 0) {
-            HSearch.oninput();
+            HSearchForm.oninput();
         } else {
-            HSearch.FORM["clear-text"].setAttribute("data-css-hidden", "");
+            HSearchForm.FORM["clear-text"].setAttribute("data-css-hidden", "");
             HHeader.LOADING.setAttribute("data-css-hidden", "");
         }
     },
@@ -981,12 +971,12 @@ const HSearch = {
         const name = target.getAttribute("name");
         if (name === "text") {
             if (e.code === KEYBOARD_CODE_CLOSE && e.ctrlKey) {
-                HSearch.clear();
+                HSearchForm.clear();
             }
         } else if (name === "date") {
             if (e.code === KEYBOARD_CODE_CLOSE && e.ctrlKey) {
                 target.value = "";
-                HSearch.ondateinput();
+                HSearchForm.ondateinput();
             }
         }
     },
@@ -1039,13 +1029,10 @@ const HHeader = {
 
         } else if (name === "clear") {
             HHeader.openActiveTab("about://settings/clearBrowserData");
-
         } else if (name === "more") {
-            HModalMore.open();
-
+            HSectionMore.open();
         } else if (name === "keyboard") {
-            HModalKeyboard.open();
-
+            HSectionKeyboard.open();
         } else if (name === "close") {
             window.close();
         } else if (name === "about") {
@@ -1055,6 +1042,24 @@ const HHeader = {
 };
 
 const HMain = {
+    MAIN: (function () {
+        const main = document.getElementById("main");
+        if (main === null) {
+            throw Error("ERROR: #main does not exist");
+        }
+        return main
+    }()),
+    change(section) {
+        if (section === "search"
+            || section === "more"
+            || section === "keyboard"
+        ) {
+            HMain.MAIN.setAttribute("data-show", section);
+        }
+    }
+};
+
+const HSearchCointainer = {
     /** @type{HTMLElement} */
     EMPTY: (function() {
         const empty = document.getElementById("m_empty");
@@ -1075,12 +1080,12 @@ const HMain = {
         if (noMoreContent) {
             return;
         }
-        if (HMain.CONTAINER.scrollTop
-            >= (HMain.CONTAINER.scrollHeight - HMain.CONTAINER.clientHeight - 50)
+        if (HSearchCointainer.CONTAINER.scrollTop
+            >= (HSearchCointainer.CONTAINER.scrollHeight - HSearchCointainer.CONTAINER.clientHeight - 50)
         ) {
             HHeader.LOADING.removeAttribute("data-css-hidden");
             chrome.history.search(SearchQuery, searchToDOM);
-            HMain.CONTAINER.onscroll = null;
+            HSearchCointainer.CONTAINER.onscroll = null;
         }
     },
     /**
@@ -1163,45 +1168,31 @@ const HMain = {
     }
 };
 
-const HModalKeyboard = {
+const HSectionKeyboard = {
     /** @type{HTMLElement} */
-    MODAL: (function (){
-        const DOMModal = document.getElementById("modal_keyboard");
-        if (DOMModal === null) {
+    SECTION: (function (){
+        const section = document.getElementById("section_keyboard");
+        if (section === null) {
             throw Error("ERROR: #modal_keyboard does not exist");
         }
-        return DOMModal;
+        return section;
     }()),
     open() {
-        if (relatedFocusTarget === null) {
-            if (document.activeElement === null
-                || document.activeElement === document.body
-            ) {
-                relatedFocusTarget = HHeader.BUTTONS.children["keyboard"];
-            } else {
-                relatedFocusTarget = document.activeElement;
-            }
+        if (HMain.MAIN.getAttribute("data-show") === "search") {
+            relatedFocusTarget = document.activeElement;
         }
-        HHeader.BUTTONS.inert = true;
-        HSearch.FORM.inert = true;
-        HMain.CONTAINER.inert = true;
-
-        HModalKeyboard.MODAL.removeAttribute("data-css-hidden");
-        HModalKeyboard.MODAL
-            .firstElementChild
-            .firstElementChild
-            .lastElementChild
-            .focus();
+        HMain.change("keyboard");
+        HSectionKeyboard.SECTION.firstElementChild.lastElementChild.focus();
     }
 };
 
-const HModalMore = {
-    MODAL: (function () {
-        const modal = document.getElementById("modal_more");
-        if (modal === null) {
+const HSectionMore = {
+    SECTION: (function () {
+        const section = document.getElementById("section_more");
+        if (section === null) {
             throw Error("ERROR: #modal_config does not exist");
         }
-        return modal;
+        return section;
     }()),
     FORM: (function () {
         const form = document.forms.namedItem("more");
@@ -1215,31 +1206,21 @@ const HModalMore = {
     init(s) {
         document.firstElementChild.setAttribute("class", s.theme);
         if (s.showSearch) {
-            HSearch.FORM.removeAttribute("data-css-hidden");
+            HSearchForm.FORM.removeAttribute("data-css-hidden");
         } else {
-            HSearch.FORM.setAttribute("data-css-hidden", "");
+            HSearchForm.FORM.setAttribute("data-css-hidden", "");
         }
-        HModalMore.FORM["theme"].value = s.theme;
-        HModalMore.FORM["open"].value = s.open;
-        HModalMore.FORM["focus"].checked = s.focusTabs;
-        HModalMore.FORM["showsearch"].checked = s.showSearch;
+        HSectionMore.FORM["theme"].value = s.theme;
+        HSectionMore.FORM["open"].value = s.open;
+        HSectionMore.FORM["focus"].checked = s.focusTabs;
+        HSectionMore.FORM["showsearch"].checked = s.showSearch;
     },
     open() {
-        if (relatedFocusTarget === null) {
-            if (document.activeElement === null
-                || document.activeElement === document.body
-            ) {
-                relatedFocusTarget = HHeader.BUTTONS.children["more"];
-            } else {
-                relatedFocusTarget = document.activeElement;
-            }
+        if (HMain.MAIN.getAttribute("data-show") === "search") {
+            relatedFocusTarget = document.activeElement;
         }
-        HHeader.BUTTONS.inert = true;
-        HSearch.FORM.inert = true;
-        HMain.CONTAINER.inert = true;
-
-        HModalMore.MODAL.removeAttribute("data-css-hidden");
-        HModalMore.FORM["theme"].focus();
+        HMain.change("more");
+        HSectionMore.FORM["theme"].focus();
     },
     /**
      * @type {(e: InputEvent) => undefined} */
@@ -1266,9 +1247,9 @@ const HModalMore = {
         } else if (name === "showsearch") {
             storage.showSearch = target.checked;
             if (target.checked) {
-                HSearch.FORM.removeAttribute("data-css-hidden");
+                HSearchForm.FORM.removeAttribute("data-css-hidden");
             } else {
-                HSearch.FORM.setAttribute("data-css-hidden", "");
+                HSearchForm.FORM.setAttribute("data-css-hidden", "");
             }
             storageChange = true;
         } else if (name === "open") {
@@ -1307,20 +1288,20 @@ const HError = {
     }()),
     /**@type{(msg:string) => undefined}*/
     set(msg) {
-        HMain.CONTAINER.replaceChildren();
-        HMain.EMPTY.setAttribute("data-css-hidden", "");
+        HSearchCointainer.CONTAINER.replaceChildren();
+        HSearchCointainer.EMPTY.setAttribute("data-css-hidden", "");
         HError.COMPONENT.children["msg"].textContent = msg;
         HError.COMPONENT.removeAttribute("data-css-hidden");
 
-        HSearch.FORM["text"].removeEventListener("input", HSearch.oninput, false);
-        HSearch.FORM["clear-text"].removeEventListener("click", HSearch.clear, false);
-        HSearch.FORM["date"].removeEventListener("input", HSearch.ondateinput, false);
-        HSearch.FORM.removeEventListener("keydown", HSearch.keydown, false);
+        HSearchForm.FORM["text"].removeEventListener("input", HSearchForm.oninput, false);
+        HSearchForm.FORM["clear-text"].removeEventListener("click", HSearchForm.clear, false);
+        HSearchForm.FORM["date"].removeEventListener("input", HSearchForm.ondateinput, false);
+        HSearchForm.FORM.removeEventListener("keydown", HSearchForm.keydown, false);
 
-        HMain.CONTAINER.onscroll = null;
-        HMain.CONTAINER.removeEventListener("click", HMain.onclick, false);
-        HMain.CONTAINER.removeEventListener("auxclick", HMain.onauxclick, false);
-        HMain.CONTAINER.removeEventListener("keyup", HMain.onkeyup, false);
+        HSearchCointainer.CONTAINER.onscroll = null;
+        HSearchCointainer.CONTAINER.removeEventListener("click", HSearchCointainer.onclick, false);
+        HSearchCointainer.CONTAINER.removeEventListener("auxclick", HSearchCointainer.onauxclick, false);
+        HSearchCointainer.CONTAINER.removeEventListener("keyup", HSearchCointainer.onkeyup, false);
 
         throw Error(msg);
     }
@@ -1338,10 +1319,10 @@ async function searchToDOM(historyItems) {
         SearchQuery.maxResults = MAX_SEARCH_RESULTS;
 
         if (totalItems === 0) {
-            HMain.EMPTY.removeAttribute("data-css-hidden");
+            HSearchCointainer.EMPTY.removeAttribute("data-css-hidden");
         } else {
             if (Fragment.children.length > 0) {
-                let DOMRange = HMain.CONTAINER.lastElementChild;
+                let DOMRange = HSearchCointainer.CONTAINER.lastElementChild;
                 if (DOMRange !== null) {
                     DOMRange.appendChild(Fragment);
                 }
@@ -1452,19 +1433,19 @@ async function searchToDOM(historyItems) {
         } else {
             DOMRange = HRange.create(timeRangeStart);
         }
-        HMain.CONTAINER.appendChild(DOMRange);
+        HSearchCointainer.CONTAINER.appendChild(DOMRange);
     } else if (lastRangeIsFull) {
         lastRangeIsFull = false;
 
         if (searchMode) {
             DOMRange = HRange.createSearch(timeRangeStart);
-            HMain.CONTAINER.appendChild(DOMRange);
+            HSearchCointainer.CONTAINER.appendChild(DOMRange);
         } else {
             DOMRange = HRange.create(timeRangeStart);
-            HMain.CONTAINER.appendChild(DOMRange);
+            HSearchCointainer.CONTAINER.appendChild(DOMRange);
         }
     } else {
-        DOMRange = HMain.CONTAINER.lastElementChild;
+        DOMRange = HSearchCointainer.CONTAINER.lastElementChild;
     }
     if (DOMRange === null) {
         HError.set("DOMRange is null");
@@ -1509,7 +1490,7 @@ async function searchToDOM(historyItems) {
 
         HHeader.LOADING.setAttribute("data-css-hidden", "");
         DOMRange.appendChild(Fragment);
-        HMain.CONTAINER.onscroll = HMain.onscroll;
+        HSearchCointainer.CONTAINER.onscroll = HSearchCointainer.onscroll;
     }
 }
 
@@ -1517,55 +1498,71 @@ async function searchToDOM(historyItems) {
 function searchAgain() {
     if (noMoreContent) {
         if (totalItems < 1) {
-            HMain.EMPTY.removeAttribute("data-css-hidden");
+            HSearchCointainer.EMPTY.removeAttribute("data-css-hidden");
         }
         return;
     }
-    if (HMain.CONTAINER.scrollTop
-        >= (HMain.CONTAINER.scrollHeight - HMain.CONTAINER.clientHeight - 50)
+    if (HSearchCointainer.CONTAINER.scrollTop
+        >= (HSearchCointainer.CONTAINER.scrollHeight - HSearchCointainer.CONTAINER.clientHeight - 50)
     ) {
         HHeader.LOADING.setAttribute("data-css-hidden", "");
         chrome.history.search(SearchQuery, searchToDOM);
-        HMain.CONTAINER.onscroll = null;
+        HSearchCointainer.CONTAINER.onscroll = null;
     }
 }
 
 
 /**
  * @type {(e: MouseEvent) => undefined}*/
-function HModalOnclick(e) {
+function HSectionOnclick(e) {
     let target = e.target;
     if (target?.getAttribute("data-action") === "close") {
-        closeModal(e.currentTarget);
+        HMain.change("search");
+        focusRelatedTarget();
     }
 }
 
 /**
  * @type {(e: KeyboardEvent) => undefined}*/
 function DocumentOnkeyup (e) {
-    if (!HModalMore.MODAL.hasAttribute("data-css-hidden")) {
-        if (e.code === KEYBOARD_CODE_CLOSE || e.code === KEYBOARD_CODE_MORE) {
-            closeModal(HModalMore.MODAL);
+    const HMainShow = HMain.MAIN.getAttribute("data-show");
+    if (HMainShow === "more") {
+        if (e.code === KEYBOARD_CODE_KEYBOARD) {
+            console.info(document.activeElement);
+            HSectionKeyboard.open();
+        } else if (e.code === KEYBOARD_CODE_CLOSE
+            || e.code === KEYBOARD_CODE_MORE
+        ) {
+            HMain.change("search");
+            focusRelatedTarget();
         }
-    } else if (!HModalKeyboard.MODAL.hasAttribute("data-css-hidden")) {
-        if (e.code === KEYBOARD_CODE_CLOSE || e.code === KEYBOARD_CODE_KEYBOARD) {
-            closeModal(HModalKeyboard.MODAL);
+    } else if (HMainShow === "keyboard") {
+        if (e.code === KEYBOARD_CODE_MORE) {
+            console.info(document.activeElement);
+            HSectionMore.open()
+        } else if (e.code === KEYBOARD_CODE_CLOSE
+            || e.code === KEYBOARD_CODE_KEYBOARD
+        ) {
+            HMain.change("search");
+            focusRelatedTarget();
         }
     } else {
         if (e.ctrlKey || e.shiftKey) {
             return;
         }
-        if (document.activeElement !== HSearch.FORM["text"]
-            && document.activeElement !== HSearch.FORM["date"]
+        if (document.activeElement !== HSearchForm.FORM["text"]
+            && document.activeElement !== HSearchForm.FORM["date"]
         ) {
             if (e.code === KEYBOARD_CODE_SEARCH) {
-                HSearch.FORM["text"].focus();
+                HSearchForm.FORM["text"].focus();
             }else if (e.code === KEYBOARD_CODE_KEYBOARD) {
-                HModalKeyboard.open();
+                console.info(document.activeElement);
+                HSectionKeyboard.open();
             } else if (e.code === KEYBOARD_CODE_MORE) {
-                HModalMore.open();
+                console.info(document.activeElement);
+                HSectionMore.open()
             } else if (e.code === KEYBOARD_CODE_CLEAN) {
-                HHeader.openClear();
+                HHeader.openActiveTab("about://settings/clearBrowserData");
             }
         }
     }
@@ -1576,7 +1573,7 @@ chrome.storage.local.get(
     /**@type{(items: typeof storage) => undefined}*/
     function (items) {
         initStorage(items);
-        HModalMore.init(storage);
+        HSectionMore.init(storage);
 
 
         SearchQuery.endTime = TimeRange.createStart(Date.now()) + DAY;
@@ -1589,19 +1586,51 @@ chrome.storage.local.get(
         HHeader.BUTTONS.addEventListener("click", HHeader.onclick, false);
         HHeader.BUTTONS.addEventListener("auxclick", HHeader.onauxclick, false);
 
-        HSearch.FORM["text"].addEventListener("input", HSearch.oninput, false);
-        HSearch.FORM["clear-text"].addEventListener("click", HSearch.clear, false);
-        HSearch.FORM["date"].addEventListener("input", HSearch.ondateinput, false);
-        HSearch.FORM.addEventListener("keydown", HSearch.keydown, false);
+        HSearchForm.FORM["text"].addEventListener(
+            "input",
+            HSearchForm.oninput,
+            false
+        );
+        HSearchForm.FORM["clear-text"].addEventListener(
+            "click",
+            HSearchForm.clear,
+            false
+        );
+        HSearchForm.FORM["date"].addEventListener(
+            "input",
+            HSearchForm.ondateinput,
+            false
+        );
+        HSearchForm.FORM.addEventListener(
+            "keydown",
+            HSearchForm.keydown,
+            false
+        );
 
-        HMain.CONTAINER.onscroll = HMain.onscroll;
-        HMain.CONTAINER.addEventListener("click", HMain.onclick, false);
-        HMain.CONTAINER.addEventListener("auxclick", HMain.onauxclick, false);
-        HMain.CONTAINER.addEventListener("keyup", HMain.onkeyup, false);
+        HSearchCointainer.CONTAINER.onscroll = HSearchCointainer.onscroll;
+        HSearchCointainer.CONTAINER.addEventListener(
+            "click",
+            HSearchCointainer.onclick,
+            false
+       );
+        HSearchCointainer.CONTAINER.addEventListener(
+            "auxclick",
+            HSearchCointainer.onauxclick,
+            false
+        );
+        HSearchCointainer.CONTAINER.addEventListener(
+            "keyup",
+            HSearchCointainer.onkeyup,
+            false
+        );
 
-        HModalMore.MODAL.addEventListener("click", HModalOnclick, false);
-        HModalMore.FORM.addEventListener("change", HModalMore.onchange, false);
+        HSectionMore.SECTION.addEventListener(
+            "click",
+            HSectionOnclick,
+            false
+        );
+        HSectionMore.FORM.addEventListener("change", HSectionMore.onchange, false);
 
-        HModalKeyboard.MODAL.addEventListener("click", HModalOnclick, false);
+        HSectionKeyboard.SECTION.addEventListener("click", HSectionOnclick, false);
     }
 );
